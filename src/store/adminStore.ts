@@ -344,7 +344,7 @@ export const DEFAULT_SUPPLIES: SupplyItem[] = [
     spec: 'HPL espesor 0.9 mm de autor para aplacado',
     unit: 'Plancha (3.96 m²)',
     priceClp: 92000,
-    supplier: 'Abet Laminati Italia / Provelcar',
+    supplier: 'Abet Laminati Italia',
     stockRef: 24,
     notes: 'Aplacado en MDF 18 mm con contrabalanceador'
   },
@@ -905,7 +905,7 @@ export const DEFAULT_CUSTOM_TEXTURES: CustomTextureItem[] = [
     active: true,
     createdAt: '2026-01-10',
     approvalStatus: 'approved',
-    providerName: 'Abet Laminati / Provelcar',
+    providerName: 'Abet Laminati',
     commissionPercentage: 15,
     providerNetPriceClp: 78200
   },
@@ -924,7 +924,7 @@ export const DEFAULT_CUSTOM_TEXTURES: CustomTextureItem[] = [
     active: true,
     createdAt: '2026-01-15',
     approvalStatus: 'approved',
-    providerName: 'Abet Laminati / Provelcar',
+    providerName: 'Abet Laminati',
     commissionPercentage: 15,
     providerNetPriceClp: 78200
   },
@@ -1552,7 +1552,7 @@ export const DEFAULT_PROVIDERS: ProviderItem[] = [
   },
   {
     id: 'prov-abet',
-    name: 'Abet Laminati / Provelcar',
+    name: 'Abet Laminati',
     rut: '76.123.456-7',
     email: 'contacto@provelcar.cl',
     phone: '+56 2 2234 5678',

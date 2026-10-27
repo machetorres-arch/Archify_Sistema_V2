@@ -730,10 +730,10 @@ export function generateKitchenPartsList(cabinets: CabinetType[]): Part[] {
         thickness: backThick,
         material: backMat,
         isHpl: isBackHpl,
-        edgeL1: true, edgeL2: false, edgeW1: false, edgeW2: false,
+        edgeL1: false, edgeL2: false, edgeW1: false, edgeW2: false,
         notes: isHospitalModule
-            ? `Tapa trasera de melamina/HPL ${backThick}mm que parte desde la cara superior del piso hasta la cota superior`
-            : (isBackHpl ? `Trasera estructurada en MDF ${structSubstrateMm}mm laminada en HPL 2 caras (Espesor ${backThick}mm)` : `Placa de fondo estructurada en melamina ${backThick}mm`)
+            ? `Tapa trasera de melamina/HPL ${backThick}mm que parte desde la cara superior del piso hasta la cota superior (sin cantos)`
+            : (isBackHpl ? `Trasera estructurada en MDF ${structSubstrateMm}mm laminada en HPL 2 caras (Espesor ${backThick}mm, sin cantos)` : `Placa de fondo estructurada en melamina ${backThick}mm (sin cantos)`)
     });
 
     // 5. Repisas (Shelves) y Divisores si corresponde
