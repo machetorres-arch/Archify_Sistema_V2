@@ -2411,7 +2411,39 @@ export function generateKitchenPartsList(cabinets: CabinetType[]): Part[] {
     });
   }
 
-  return parts;
+  const frontEdgeThickness = state.edgeBandingThicknessFronts ?? 2.0;
+  const isClinicalProj = kState.projectMode === 'hospital' || kState.hospitalBaseType === 'metal_frame' || Boolean(kState.clinicalEdgeBandingAllFreeEdges);
+  const structEdgeThickness = isClinicalProj
+    ? Math.max(2.0, state.edgeBandingThicknessCabinets ?? 2.0)
+    : (state.edgeBandingThicknessCabinets ?? 0.45);
+
+  return parts.map(p => {
+    const isBack = p.thickness <= 4 && (p.thickness === 3 || p.thickness === 3.5 || p.material === 'Melamina Fondo' || (p.name.includes('Fondo') && !p.name.includes('Soporte')) || (p.name.includes('Trasera') && !p.name.includes('Barra') && !p.name.includes('Caja Cajón')));
+    const isHpl = p.isHpl;
+    if (isBack || isHpl) return p;
+
+    const isFront = (p.name.includes('Puerta') || p.name.includes('Frente') || p.name.includes('Panel Ciego')) &&
+                    !p.name.toLowerCase().includes('contrafrente') &&
+                    !p.name.toLowerCase().includes('amarre') &&
+                    !p.name.toLowerCase().includes('caja');
+    const eThick = isFront ? frontEdgeThickness : structEdgeThickness;
+
+    const lEdges = (p.edgeL1 ? 1 : 0) + (p.edgeL2 ? 1 : 0);
+    const wEdges = (p.edgeW1 ? 1 : 0) + (p.edgeW2 ? 1 : 0);
+
+    if (p.name.startsWith('Lateral ')) {
+      return {
+        ...p,
+        width: Math.round((p.width - (lEdges * eThick)) * 10) / 10
+      };
+    } else {
+      return {
+        ...p,
+        length: Math.round((p.length - (lEdges * eThick)) * 10) / 10,
+        width: Math.round((p.width - (wEdges * eThick)) * 10) / 10
+      };
+    }
+  });
 }
 
 const DEFAULT_MELAMINE_NAMES: Record<string, string> = {

@@ -462,7 +462,7 @@ export const exportKitchenToExcel = () => {
 
         const wsStone = XLSX.utils.json_to_sheet(dataStone);
         applyStyles(wsStone, [18, 36, 26, 14, 14, 14, 14, 18, 18, 38]);
-        XLSX.utils.book_append_sheet(wb, wsStone, `${sheetNum}_Cubiertas_Qstone`);
+        XLSX.utils.book_append_sheet(wb, wsStone, `${sheetNum}_Cubiertas`);
       }
     }
 

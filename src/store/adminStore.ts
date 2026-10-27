@@ -1666,7 +1666,10 @@ const getInitialState = () => {
         });
         return Array.from(map.values()).map((t) => ({
           ...t,
-          approvalStatus: t.approvalStatus || 'approved'
+          approvalStatus: t.approvalStatus || 'approved',
+          providerName: t.providerName?.replace(/Abet Laminati\s*\/\s*Provelcar/gi, 'Abet Laminati') || t.providerName,
+          name: t.name?.replace(/Abet Laminati\s*\/\s*Provelcar/gi, 'Abet Laminati') || t.name,
+          brand: t.brand?.replace(/Abet Laminati\s*\/\s*Provelcar/gi, 'Abet Laminati') || t.brand,
         }));
       })();
 
@@ -1680,7 +1683,11 @@ const getInitialState = () => {
           const def = map.get(s.id);
           map.set(s.id, def ? { ...def, ...s } : s);
         });
-        return mergeTexturesIntoSupplies(Array.from(map.values()), parsedTextures);
+        const values = Array.from(map.values()).map(s => ({
+          ...s,
+          supplier: s.supplier?.replace(/Abet Laminati\s*\/\s*Provelcar/gi, 'Abet Laminati').replace(/Abet Laminati Italia\s*\/\s*Provelcar/gi, 'Abet Laminati Italia') || s.supplier
+        }));
+        return mergeTexturesIntoSupplies(values, parsedTextures);
       })();
 
       return {
@@ -1695,7 +1702,10 @@ const getInitialState = () => {
             const def = map.get(p.id);
             map.set(p.id, def ? { ...def, ...p } : p);
           });
-          return Array.from(map.values());
+          return Array.from(map.values()).map(p => ({
+            ...p,
+            name: p.name?.replace(/Abet Laminati\s*\/\s*Provelcar/gi, 'Abet Laminati') || p.name
+          }));
         })(),
         projects: Array.isArray(parsed.projects)
           ? (parsed.projects as ProjectItem[]).filter(
