@@ -131,6 +131,67 @@ export const TexturesSection = ({
   const abetTextures = allTextures.filter(t => !isMasisaItem(t) && isAbetItem(t));
   const otherTextures = allTextures.filter(t => !isMasisaItem(t) && !isAbetItem(t) && matchesThickness(t));
 
+  const getTargetPartLabel = (part: PartType) => {
+    switch (part) {
+      case 'doors': return 'Puertas';
+      case 'drawerFronts': return 'Frentes Cajón';
+      case 'structure': return 'Estructura / Casco';
+      case 'shelves': return 'Repisas';
+      case 'coverPanels': return 'Tapas Laterales';
+      case 'drawerInner': return 'Cajas Cajón';
+      case 'back': return 'Fondo Interior';
+      case 'socle': return 'Zócalo';
+      case 'all': return 'Todo el Mueble';
+      default: return 'Pieza Seleccionada';
+    }
+  };
+
+  const getCurrentSubstrateThickness = () => {
+    const p = state.targetPart;
+    if (p === 'doors' || p === 'drawerFronts') {
+      return state.hplSubstrateThicknessDoors || 18;
+    }
+    if (p === 'shelves') {
+      return state.hplSubstrateThicknessShelves || 15;
+    }
+    return state.hplSubstrateThicknessStructure || 15;
+  };
+
+  const setSubstrateThicknessForTarget = (val: 15 | 18) => {
+    const p = state.targetPart;
+    const kState = useKitchenStore.getState();
+    // Siempre asegurar laminado 2 caras
+    state.setHplBalancer(false);
+    if (p === 'doors' || p === 'drawerFronts') {
+      state.setHplSubstrateThicknessDoors(val);
+      if (kState.activeCabinetId) {
+        kState.updateCabinet(kState.activeCabinetId, { hplSubstrateThicknessDoors: val, hplBalancer: false });
+      }
+    } else if (p === 'shelves') {
+      state.setHplSubstrateThicknessShelves(val);
+      if (kState.activeCabinetId) {
+        kState.updateCabinet(kState.activeCabinetId, { hplSubstrateThicknessShelves: val, hplBalancer: false });
+      }
+    } else if (p === 'all') {
+      state.setHplSubstrateThicknessStructure(val);
+      state.setHplSubstrateThicknessDoors(val);
+      state.setHplSubstrateThicknessShelves(val);
+      if (kState.activeCabinetId) {
+        kState.updateCabinet(kState.activeCabinetId, {
+          hplSubstrateThicknessStructure: val,
+          hplSubstrateThicknessDoors: val,
+          hplSubstrateThicknessShelves: val,
+          hplBalancer: false,
+        });
+      }
+    } else {
+      state.setHplSubstrateThicknessStructure(val);
+      if (kState.activeCabinetId) {
+        kState.updateCabinet(kState.activeCabinetId, { hplSubstrateThicknessStructure: val, hplBalancer: false });
+      }
+    }
+  };
+
   const renderTextureButton = (tex: any) => {
     const is15 = tex.thicknessMm === 15;
     const is18 = tex.thicknessMm === 18;
@@ -300,96 +361,54 @@ export const TexturesSection = ({
             {abetTextures.map(t => renderTextureButton(t))}
           </div>
 
-          {/* Trascara HPL Balancer Global 0.9 mm */}
-          <div className={`mt-2.5 p-2.5 rounded-xl border flex flex-col gap-1.5 ${
+          {/* Sustrato Base MDF Desnudo (Laminado por las 2 Caras, Reactivo a la Pieza Seleccionada) */}
+          <div className={`mt-2.5 p-2.5 rounded-xl border flex flex-col gap-2 ${
             isLight ? 'bg-orange-50/80 border-orange-200' : 'bg-black/30 border-orange-500/25'
           }`}>
             <div className="flex items-center justify-between">
-              <span className={`text-[10px] uppercase font-bold tracking-wider ${
-                isLight ? 'text-orange-950' : 'text-orange-400'
-              }`}>
-                Trascara HPL de Compensación (Global)
-              </span>
-              <span className="text-[9px] font-mono font-bold px-1.5 py-0.5 rounded bg-orange-500/20 text-orange-600 dark:text-orange-400 border border-orange-500/30">
-                0.9 mm
+              <div className="flex items-center gap-1.5 min-w-0">
+                <span className={`text-[10px] uppercase font-bold tracking-wider ${
+                  isLight ? 'text-orange-950' : 'text-orange-400'
+                }`}>
+                  Sustrato MDF (Laminado 2 Caras)
+                </span>
+                <span className="text-[9px] font-mono font-bold px-1.5 py-0.5 rounded bg-orange-500/20 text-orange-600 dark:text-orange-400 border border-orange-500/30 truncate">
+                  {getTargetPartLabel(state.targetPart)}
+                </span>
+              </div>
+              <span className="text-[10px] font-mono font-bold text-orange-500 shrink-0">
+                {getCurrentSubstrateThickness()} mm
               </span>
             </div>
             <p className={`text-[10px] leading-tight ${isLight ? 'text-slate-600' : 'text-zinc-400'}`}>
-              Balanceador blanco normalizado para evitar el alabeo de puertas y frentes laminados a una cara.
+              Tablero MDF crudo prensado con HPL por ambas caras para <span className="font-semibold text-orange-500">{getTargetPartLabel(state.targetPart)}</span>.
             </p>
             <div className="grid grid-cols-2 gap-1.5 mt-0.5">
               <button
                 type="button"
-                onClick={() => state.setHplBalancer(true)}
-                className={`py-1.5 px-2 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all cursor-pointer flex items-center justify-center gap-1 ${
-                  state.hplBalancer
+                onClick={() => setSubstrateThicknessForTarget(15)}
+                className={`py-1.5 px-2 rounded-lg text-[9.5px] font-bold uppercase tracking-wider transition-all cursor-pointer flex items-center justify-center gap-1 ${
+                  getCurrentSubstrateThickness() === 15
                     ? 'bg-orange-500 text-black shadow-xs font-extrabold'
                     : isLight
                       ? 'bg-white text-slate-700 border border-slate-300 hover:border-orange-400'
                       : 'bg-white/5 text-zinc-300 border border-white/10 hover:border-orange-500/50'
                 }`}
               >
-                <span>Balancer Blanco 0.9mm</span>
+                <span>MDF 15 mm (2 Caras)</span>
               </button>
               <button
                 type="button"
-                onClick={() => state.setHplBalancer(false)}
-                className={`py-1.5 px-2 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all cursor-pointer flex items-center justify-center gap-1 ${
-                  !state.hplBalancer
+                onClick={() => setSubstrateThicknessForTarget(18)}
+                className={`py-1.5 px-2 rounded-lg text-[9.5px] font-bold uppercase tracking-wider transition-all cursor-pointer flex items-center justify-center gap-1 ${
+                  getCurrentSubstrateThickness() === 18
                     ? 'bg-orange-500 text-black shadow-xs font-extrabold'
                     : isLight
                       ? 'bg-white text-slate-700 border border-slate-300 hover:border-orange-400'
                       : 'bg-white/5 text-zinc-300 border border-white/10 hover:border-orange-500/50'
                 }`}
               >
-                <span>Mismo HPL 2 Caras</span>
-              </button>
-            </div>
-          </div>
-
-          {/* Sustrato de Base HPL: MDF Desnudo 15mm / 18mm (Formato 2440 × 1520 mm) */}
-          <div className={`mt-2 p-2.5 rounded-xl border flex flex-col gap-1.5 ${
-            isLight ? 'bg-orange-50/80 border-orange-200' : 'bg-black/30 border-orange-500/25'
-          }`}>
-            <div className="flex items-center justify-between">
-              <span className={`text-[10px] uppercase font-bold tracking-wider ${
-                isLight ? 'text-orange-950' : 'text-orange-400'
-              }`}>
-                Sustrato Base MDF Desnudo
-              </span>
-              <span className="text-[9px] font-mono font-bold px-1.5 py-0.5 rounded bg-zinc-700/50 text-zinc-300 border border-zinc-600/40">
-                2440 × 1520 mm
-              </span>
-            </div>
-            <p className={`text-[10px] leading-tight ${isLight ? 'text-slate-600' : 'text-zinc-400'}`}>
-              Tablero MDF crudo donde se prensa el laminado HPL (formato único 2440 × 1520 mm).
-            </p>
-            <div className="grid grid-cols-2 gap-1.5 mt-0.5">
-              <button
-                type="button"
-                onClick={() => state.setHplSubstrateThickness(15)}
-                className={`py-1.5 px-2 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all cursor-pointer flex items-center justify-center gap-1 ${
-                  (state.hplSubstrateThickness || 15) === 15
-                    ? 'bg-orange-500 text-black shadow-xs font-extrabold'
-                    : isLight
-                      ? 'bg-white text-slate-700 border border-slate-300 hover:border-orange-400'
-                      : 'bg-white/5 text-zinc-300 border border-white/10 hover:border-orange-500/50'
-                }`}
-              >
-                <span>MDF Desnudo 15 mm</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => state.setHplSubstrateThickness(18)}
-                className={`py-1.5 px-2 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all cursor-pointer flex items-center justify-center gap-1 ${
-                  state.hplSubstrateThickness === 18
-                    ? 'bg-orange-500 text-black shadow-xs font-extrabold'
-                    : isLight
-                      ? 'bg-white text-slate-700 border border-slate-300 hover:border-orange-400'
-                      : 'bg-white/5 text-zinc-300 border border-white/10 hover:border-orange-500/50'
-                }`}
-              >
-                <span>MDF Desnudo 18 mm</span>
+                <span>MDF 18 mm (2 Caras)</span>
               </button>
             </div>
           </div>

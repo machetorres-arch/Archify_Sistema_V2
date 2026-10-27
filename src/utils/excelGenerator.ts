@@ -77,8 +77,11 @@ export const exportToExcel = () => {
     }
     
     // Y siempre agregamos la placa de sustrato (MDF o Melamina) a dataPlacas
-    // Si es HPL, el sustrato es MDF desnudo (15mm o 18mm según hplSubstrateThickness) con formato 2440x1520 mm
-    const substrateThick = state.hplSubstrateThickness || 15;
+    // Si es HPL, el sustrato es MDF desnudo (15mm o 18mm según estructura vs puertas) con formato 2440x1520 mm
+    const isFrontPiece = isFront || name.toLowerCase().includes('puerta') || name.toLowerCase().includes('frente');
+    const substrateThick = isFrontPiece
+      ? (state.hplSubstrateThicknessDoors || state.hplSubstrateThickness || 18)
+      : (state.hplSubstrateThicknessStructure || state.hplSubstrateThickness || 15);
     const baseMaterial = material === 'hpl' ? `MDF Desnudo ${substrateThick}mm (Sustrato HPL)` : decorName;
     const pieceThickness = material === 'hpl' ? substrateThick : (state.thickness * 10);
     

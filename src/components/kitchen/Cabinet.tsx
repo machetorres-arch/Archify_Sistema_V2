@@ -13,7 +13,7 @@ import { FridgeFDVSignatureSBS } from './decoration/FridgeFDVSignatureSBS';
 import { PlantDecoration } from './decoration/PlantDecoration';
 import { DishwasherFDVActive12C } from './decoration/DishwasherFDVActive12C';
 import { KitchenHandle3D } from './KitchenHandle3D';
-import { getResolvedCabinetShelfElevations } from '../../utils/kitchenManufacturing';
+import { getResolvedCabinetShelfElevations, isHplFinish } from '../../utils/kitchenManufacturing';
 
 export function AssemblyJoint({
   position, 
@@ -971,7 +971,7 @@ interface CabinetProps extends CabinetType {
   index?: number;
 }
 
-export function Cabinet({ id, type, variant, width, height, depth, position, rotation, color, structureColor, doorColor, drawerFrontColor, drawerInnerColor, shelfColor, backColor, socleColor, structureMaterial, doorMaterial, drawerFrontMaterial, drawerInnerMaterial, shelfMaterial, backMaterial, socleMaterial, grainDirection, grainElements, hplBalancer, isOpen, openElements, index, shelvesCount, shelvesCountLower, shelvesCountUpper, handleConfig: propHandleConfig, leftCoverPanel, rightCoverPanel }: CabinetProps) {
+export function Cabinet({ id, type, variant, width, height, depth, position, rotation, color, structureColor, doorColor, drawerFrontColor, drawerInnerColor, shelfColor, backColor, socleColor, structureMaterial, doorMaterial, drawerFrontMaterial, drawerInnerMaterial, shelfMaterial, backMaterial, socleMaterial, grainDirection, grainElements, hplBalancer, isOpen, openElements, index, shelvesCount, shelvesCountLower, shelvesCountUpper, handleConfig: propHandleConfig, leftCoverPanel, rightCoverPanel, hplSubstrateThicknessShelves }: CabinetProps) {
    const { activeCabinetId, setActiveCabinet, setDraggingCabinetId, setToolMode, showSocle, socleHeight, cabinets, viewMode, golaSystem, countertopConfig, qstoneCatalog, setOpenElement, handleConfig: storeHandleConfig, projectMode, hospitalBaseType } = useKitchenStore();
    const handleConfig = propHandleConfig || storeHandleConfig;
 
@@ -1112,6 +1112,9 @@ export function Cabinet({ id, type, variant, width, height, depth, position, rot
    };
 
    const thickness = 1.5;
+   const isShelfHpl = isHplFinish(shelfColor || cStructure, shelfMaterial);
+   const shelfSubMm = hplSubstrateThicknessShelves || useStore.getState().hplSubstrateThicknessShelves || 15;
+   const shelfThickness = isShelfHpl ? (shelfSubMm === 18 ? 2.0 : 1.7) : thickness;
 
    const isWhiteDrawerFinish = (c?: string) => {
       if (!c) return true;
@@ -1144,14 +1147,14 @@ export function Cabinet({ id, type, variant, width, height, depth, position, rot
    const cabH = height - legsHeight;
    const innerW = width - (thickness * 2);
    const gap = 0.3; // 3mm de cantería
-   const isKutzAsaGlobal = handleConfig?.model === 'kutz_asa';
-   const kutzGapY = isKutzAsaGlobal ? 1.0 : gap; // 10mm de luz entre frentes para asa corrida
+   const effectiveVariant = variant || (width > 60 ? '2_doors' : '1_door');
+   const isKutzAsaGlobal = handleConfig?.model === 'kutz_asa' || effectiveVariant === 'hospital_meson_3drawers' || effectiveVariant === 'hospital_meson_1door' || effectiveVariant === 'hospital_meson_2doors';
+   const kutzGapY = isKutzAsaGlobal ? 3.5 : gap; // 35mm de luz entre frentes para asa corrida según plano CAD
    const faldonDrop = (countertopConfig?.enabled && isBaseOrIsland) ? Math.max(0, rawRegruesoCm - stoneThicknessCm) : 0;
    const kutzTopDeduct = (isBaseOrIsland && isKutzAsaGlobal)
-      ? (faldonDrop + 3.2)
+      ? (faldonDrop + 3.5)
       : (isGolaActive ? 3.5 : (isBaseOrIsland ? regruesoDeduct : 0));
    const frontZ = depth/2 + thickness/2;
-   const effectiveVariant = variant || (width > 60 ? '2_doors' : '1_door');
 
    const renderParametricBody = () => {
       // 1. Renderizado de Elementos de Decoración & Electrodomésticos Especializados
@@ -1284,13 +1287,13 @@ export function Cabinet({ id, type, variant, width, height, depth, position, rot
                      {/* Drawer Box (Sides, Back, Front Contrafrente, Bottom) */}
                      <Board position={[-skw/2 + thickness/2, yBoxCenter, drawerBoxZCenter]} args={[thickness, sideHeight, drawerBoxLength]} {...parseColor(cInner, drawerInnerMaterial)} />
                      <Board position={[skw/2 - thickness/2, yBoxCenter, drawerBoxZCenter]} args={[thickness, sideHeight, drawerBoxLength]} {...parseColor(cInner, drawerInnerMaterial)} />
-                     <Board position={[0, yBoxCenter + 0.6, drawerBoxZCenter - drawerBoxLength/2 + thickness/2]} args={[skw - thickness*2, sideHeight - 1.2, thickness]} {...parseColor(cInner, drawerInnerMaterial)} />
+                     <Board position={[0, yBoxCenter + 0.6, drawerBoxZCenter - drawerBoxLength/2 + thickness/2 + 0.2]} args={[skw - thickness*2, sideHeight - 1.2, thickness]} {...parseColor(cInner, drawerInnerMaterial)} />
                      <Board position={[0, yBoxCenter + 0.6, drawerBoxZCenter + drawerBoxLength/2 - thickness/2]} args={[skw - thickness*2, sideHeight - 1.2, thickness]} {...parseColor(cInner, drawerInnerMaterial)} />
-                     <Board position={[0, yBottomPanel + drawerBottomThick / 2, drawerBoxZCenter]} args={[skw - thickness*2, drawerBottomThick, drawerBoxLength - thickness*2]} {...drawerBottomProps} />
+                     <Board position={[0, yBottomPanel + drawerBottomThick / 2, drawerBoxZCenter + 0.1]} args={[skw - thickness*2, drawerBottomThick, drawerBoxLength - thickness*2 - 0.2]} {...drawerBottomProps} />
                      
                      {/* Uniones del Cajón a la Trasera y al Contrafrente */}
-                     <AssemblyJoint position={[-skw/2 + thickness, yBoxCenter, drawerBoxZCenter - drawerBoxLength/2 + thickness]} length={sideHeight} axis="y" pointing="right" thickness={thickness} count={1} overrideAssemblyType={useStore.getState().drawerAssemblyType} />
-                     <AssemblyJoint position={[skw/2 - thickness, yBoxCenter, drawerBoxZCenter - drawerBoxLength/2 + thickness]} length={sideHeight} axis="y" pointing="left" thickness={thickness} count={1} overrideAssemblyType={useStore.getState().drawerAssemblyType} />
+                     <AssemblyJoint position={[-skw/2 + thickness, yBoxCenter, drawerBoxZCenter - drawerBoxLength/2 + thickness + 0.2]} length={sideHeight} axis="y" pointing="right" thickness={thickness} count={1} overrideAssemblyType={useStore.getState().drawerAssemblyType} />
+                     <AssemblyJoint position={[skw/2 - thickness, yBoxCenter, drawerBoxZCenter - drawerBoxLength/2 + thickness + 0.2]} length={sideHeight} axis="y" pointing="left" thickness={thickness} count={1} overrideAssemblyType={useStore.getState().drawerAssemblyType} />
                      <AssemblyJoint position={[-skw/2 + thickness, yBoxCenter, drawerBoxZCenter + drawerBoxLength/2 - thickness]} length={sideHeight} axis="y" pointing="right" thickness={thickness} count={1} overrideAssemblyType={useStore.getState().drawerAssemblyType} />
                      <AssemblyJoint position={[skw/2 - thickness, yBoxCenter, drawerBoxZCenter + drawerBoxLength/2 - thickness]} length={sideHeight} axis="y" pointing="left" thickness={thickness} count={1} overrideAssemblyType={useStore.getState().drawerAssemblyType} />
 
@@ -1416,14 +1419,14 @@ export function Cabinet({ id, type, variant, width, height, depth, position, rot
                         {...parseColor(cInner, drawerInnerMaterial)}
                      />
 
-                     {/* Traseras individuales de cada ala (izquierda y derecha) */}
+                     {/* Traseras individuales de cada ala (izquierda y derecha) retranqueadas 2mm hacia el interior */}
                      <Board
-                        position={[-skw / 2 + wingW / 2, yBoxCenter, drawerBoxZCenter - drawerBoxLength / 2 + thickness / 2]}
+                        position={[-skw / 2 + wingW / 2, yBoxCenter, drawerBoxZCenter - drawerBoxLength / 2 + thickness / 2 + 0.2]}
                         args={[wingW, sideHeight, thickness]}
                         {...parseColor(cInner, drawerInnerMaterial)}
                      />
                      <Board
-                        position={[skw / 2 - wingW / 2, yBoxCenter, drawerBoxZCenter - drawerBoxLength / 2 + thickness / 2]}
+                        position={[skw / 2 - wingW / 2, yBoxCenter, drawerBoxZCenter - drawerBoxLength / 2 + thickness / 2 + 0.2]}
                         args={[wingW, sideHeight, thickness]}
                         {...parseColor(cInner, drawerInnerMaterial)}
                      />
@@ -1496,9 +1499,9 @@ export function Cabinet({ id, type, variant, width, height, depth, position, rot
          
          const renderShelfWithJoints = (yPos: number, keySuffix: string | number) => (
             <group key={`shelf-${keySuffix}`}>
-               <Board position={[0, yPos, 0]} args={[innerW, thickness, depth - 2]} {...parseColor(shelfColor || cStructure, shelfMaterial, 'shelf')} />
-               <AssemblyJoint position={[-innerW/2, yPos, 0]} length={depth - 2} axis="z" pointing="right" thickness={thickness} count={2} />
-               <AssemblyJoint position={[innerW/2, yPos, 0]} length={depth - 2} axis="z" pointing="left" thickness={thickness} count={2} />
+               <Board position={[0, yPos, 0]} args={[innerW, shelfThickness, depth - 2]} {...parseColor(shelfColor || cStructure, shelfMaterial, 'shelf')} />
+               <AssemblyJoint position={[-innerW/2, yPos, 0]} length={depth - 2} axis="z" pointing="right" thickness={shelfThickness} count={2} />
+               <AssemblyJoint position={[innerW/2, yPos, 0]} length={depth - 2} axis="z" pointing="left" thickness={shelfThickness} count={2} />
             </group>
          );
 
@@ -2168,24 +2171,24 @@ export function Cabinet({ id, type, variant, width, height, depth, position, rot
 
          if (effectiveVariant === 'hospital_meson_3drawers') {
             // Módulo Cajonero Hospitalario MC.2.02: 3 cajones (A, B y C) según plano CAD
-            // A (superior): h~16.0cm + Cerradura trampa ANVER + Tirador Kutz
-            // B (medio): h~16.0cm + Tirador Kutz
-            // C (inferior): h~21.6cm + Tirador Kutz
-            // Luz vertical entre frentes = 10mm (1.0cm) / Luz superior = 32mm (3.2cm)
-            const deduct = kutzTopDeduct;
-            const gapY = kutzGapY;
-            const availableH = Math.max(30, cabH - deduct - gapY * 3);
-            // Proporción normada del plano: A=160, B=160, C=216 -> 160+160+216=536
-            const hA = Math.max(10, Math.round(availableH * (160 / 536) * 10) / 10);
-            const hB = Math.max(10, Math.round(availableH * (160 / 536) * 10) / 10);
-            const hC = availableH - hA - hB;
-            const yC = legsHeight + gapY + hC / 2;
-            const yB = legsHeight + gapY + hC + gapY + hB / 2;
-            const yA = legsHeight + gapY + hC + gapY + hB + gapY + hA / 2;
+            // A (superior): h=14.8cm + Cerradura trampa ANVER + Tirador Kutz
+            // B (medio): h=14.8cm + Tirador Kutz
+            // C (inferior): h=19.0cm + Tirador Kutz
+            // Luz vertical entre frentes = 35mm (3.5cm) / Luz superior bajo cubierta = 32mm (3.2cm)
+            const topGap = 3.5 + faldonDrop; // 3.5cm luz superior + faldón de regrueso
+            const interGap = 3.5; // 35mm entre frentes para perfil asa corrida según plano CAD
+            const availableH = Math.max(30, cabH - topGap - interGap * 2);
+            // Proporción paramétrica exacta según plano CAD (A=148mm, B=148mm, C=190mm para casco estándar de 588mm -> 148+148+190=486mm)
+            const hA = Math.max(10, Math.round(availableH * (148 / 486) * 10) / 10);
+            const hB = Math.max(10, Math.round(availableH * (148 / 486) * 10) / 10);
+            const hC = Number((availableH - hA - hB).toFixed(1));
+            const yC = legsHeight + hC / 2;
+            const yB = legsHeight + hC + interGap + hB / 2;
+            const yA = legsHeight + hC + interGap + hB + interGap + hA / 2;
 
             // Cotas de barras frontales intermedias entre cajones según detalle CAD (VERTICALES, alto 55mm con tapacanto)
-            const yBarCB = legsHeight + gapY + hC + gapY / 2;
-            const yBarBA = legsHeight + gapY + hC + gapY + hB + gapY / 2;
+            const yBarCB = legsHeight + hC + interGap / 2;
+            const yBarBA = legsHeight + hC + interGap + hB + interGap / 2;
             const frontBarHeight = 5.5; // 55 mm
             const frontBarZPos = depth / 2 - thickness / 2;
 
@@ -2938,8 +2941,8 @@ export function Cabinet({ id, type, variant, width, height, depth, position, rot
                               {/* Caja del Cajón Interior */}
                               <Board position={[-skw / 2 + thickness / 2, yCenter, drawerBoxZCenter]} args={[thickness, drawerInnerH - 2, drawerBoxLength]} {...parseColor(cInner, drawerInnerMaterial)} />
                               <Board position={[skw / 2 - thickness / 2, yCenter, drawerBoxZCenter]} args={[thickness, drawerInnerH - 2, drawerBoxLength]} {...parseColor(cInner, drawerInnerMaterial)} />
-                              <Board position={[0, yCenter + 0.6, drawerBoxZCenter - drawerBoxLength / 2 + thickness / 2]} args={[skw - thickness * 2, drawerInnerH - 3.2, thickness]} {...parseColor(cInner, drawerInnerMaterial)} />
-                              <Board position={[0, yCenter - drawerInnerH / 2 + 1.35, drawerBoxZCenter]} args={[skw - thickness * 2, 0.3, drawerBoxLength - thickness * 2]} color="#dddddd" />
+                              <Board position={[0, yCenter + 0.6, drawerBoxZCenter - drawerBoxLength / 2 + thickness / 2 + 0.2]} args={[skw - thickness * 2, drawerInnerH - 3.2, thickness]} {...parseColor(cInner, drawerInnerMaterial)} />
+                              <Board position={[0, yCenter - drawerInnerH / 2 + 1.35, drawerBoxZCenter + 0.1]} args={[skw - thickness * 2, 0.3, drawerBoxLength - thickness * 2 - 0.2]} color="#dddddd" />
                            </AnimatedDrawer>
                         </group>
                      );
@@ -3177,15 +3180,16 @@ export function Cabinet({ id, type, variant, width, height, depth, position, rot
                      <Board position={[0, legsHeight + thickness/2, botZ]} args={[innerW, thickness, botDepth]} {...parseColor(cStructure, structureMaterial, 'bottom')} />
                      {effectiveVariant === 'tall_oven_vent' ? (
                         <>
-                           {/* Trasera despensa inferior */}
-                           <Board position={[0, legsHeight + (70 - thickness)/2, -depth/2 + thickness/2]} args={[innerW, 70 - thickness, thickness]} {...parseColor(cBack, backMaterial, 'back')} />
-                           {/* Trasera despensa superior (el tramo de hornos queda abierto para la chimenea de 50mm) */}
+                           {/* Trasera despensa inferior retranqueada 2mm hacia el interior */}
+                           <Board position={[0, legsHeight + (70 - thickness)/2, -depth/2 + 0.2 + thickness/2]} args={[innerW, 70 - thickness, thickness]} {...parseColor(cBack, backMaterial, 'back')} />
+                           {/* Trasera despensa superior retranqueada 2mm hacia el interior */}
                            {cabH > 170 && (
-                              <Board position={[0, legsHeight + 168 + (cabH - 168 - thickness)/2, -depth/2 + thickness/2]} args={[innerW, Math.max(5, cabH - 168 - thickness), thickness]} {...parseColor(cBack, backMaterial, 'back')} />
+                              <Board position={[0, legsHeight + 168 + (cabH - 168 - thickness)/2, -depth/2 + 0.2 + thickness/2]} args={[innerW, Math.max(5, cabH - 168 - thickness), thickness]} {...parseColor(cBack, backMaterial, 'back')} />
                            )}
                         </>
                      ) : (
-                        <Board position={[0, standardBackY, -depth/2 + thickness/2]} args={[innerW, standardBackH, thickness]} {...parseColor(cBack, backMaterial, 'back')} />
+                        /* Fondo / trasera del gabinete retranqueado 2mm (0.2cm) hacia el interior */
+                        <Board position={[0, standardBackY, -depth/2 + 0.2 + thickness/2]} args={[innerW, standardBackH, thickness]} {...parseColor(cBack, backMaterial, 'back')} />
                      )}
                      
                      {/* Uniones estructurales de Base a Laterales */}
@@ -3198,8 +3202,8 @@ export function Cabinet({ id, type, variant, width, height, depth, position, rot
                <>
                   {effectiveVariant === 'hospital_meson_3drawers' ? (
                      (() => {
-                        const topDepth = depth - thickness * 2;
-                        const topZ = 0;
+                        const topDepth = depth - thickness * 2 - 0.2;
+                        const topZ = 0.1;
                         return (
                            <>
                               <Board 
@@ -3250,7 +3254,7 @@ export function Cabinet({ id, type, variant, width, height, depth, position, rot
                </>
             ) : (
                <>
-                  <Board position={[0, height - thickness/2, 0]} args={[innerW, thickness, depth]} {...parseColor(cStructure, structureMaterial, 'top')} />
+                  <Board position={[0, height - thickness/2, 0.1]} args={[innerW, thickness, depth - 0.2]} {...parseColor(cStructure, structureMaterial, 'top')} />
                   {/* Techo a laterales */}
                   <AssemblyJoint position={[-innerW/2, height - thickness/2, 0]} length={depth} axis="z" pointing="right" thickness={thickness} count={2} />
                   <AssemblyJoint position={[innerW/2, height - thickness/2, 0]} length={depth} axis="z" pointing="left" thickness={thickness} count={2} />

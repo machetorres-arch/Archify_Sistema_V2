@@ -305,9 +305,15 @@ export function KitchenBlueprint() {
         allowRotation: false // Respetar orientación de diseño en laminado Abet
       });
 
-      // 2. Plancha MDF Crudo (Sustrato Unificado para toda la carpintería HPL)
+      // 2. Plancha MDF Crudo (Sustrato para carpintería HPL)
       const cab = kState.cabinets.find(c => c.id === p.moduleId);
-      const subThick = cab?.hplSubstrateThickness || state.hplSubstrateThickness || 15;
+      const isFrontPiece = p.materialCategory === 'doors' || p.name.toLowerCase().includes('puerta') || p.name.toLowerCase().includes('frente');
+      const isShelfPiece = p.name.toLowerCase().includes('repisa') || p.name.toLowerCase().includes('estante') || p.name.toLowerCase().includes('divisor');
+      const subThick = isFrontPiece
+        ? (cab?.hplSubstrateThicknessDoors || state.hplSubstrateThicknessDoors || cab?.hplSubstrateThickness || state.hplSubstrateThickness || 18)
+        : isShelfPiece
+        ? (cab?.hplSubstrateThicknessShelves || state.hplSubstrateThicknessShelves || cab?.hplSubstrateThicknessStructure || state.hplSubstrateThicknessStructure || 15)
+        : (cab?.hplSubstrateThicknessStructure || state.hplSubstrateThicknessStructure || cab?.hplSubstrateThickness || state.hplSubstrateThickness || 15);
       const subKey = `MDF_CRUDO_SUSTRATO_${subThick}MM`;
       if (!boardGroups[subKey]) {
         boardGroups[subKey] = {
@@ -571,7 +577,7 @@ export function KitchenBlueprint() {
 
     const isNarrowPiece = isBarraAmarre || pw < 280;
 
-    const isFrontPiece = part.name.includes("Puerta") || part.name.includes("Frente") || part.name.includes("Panel Ciego") || part.name.includes("Tapa");
+    const isFrontPiece = (part.name.includes("Puerta") || part.name.includes("Frente") || part.name.includes("Panel Ciego") || part.name.includes("Tapa")) && !part.name.toLowerCase().includes("contrafrente");
     const isClinical = Boolean(kState.clinicalEdgeBandingAllFreeEdges || part.notes?.includes("Canteado Clínico"));
     const isThickEdge = isClinical || (isFrontPiece ? (state.edgeBandingThicknessFronts || 2.0) >= 1.0 : (state.edgeBandingThicknessCabinets || 0.5) >= 1.0);
     const edgeColor = isThickEdge ? "#e11d48" : "#f97316";
@@ -2182,6 +2188,8 @@ export function KitchenBlueprint() {
     const finalCabHMm = cabH + stoneThickMm;
     const regruesoValCm = ctConfig ? (ctConfig.regruesoCm || (isBaseOrIsland ? (ctConfig.baseRegruesoCm ?? ctConfig.regruesoCm) : 0) || 0) : 0;
     const hasRegrueso = isBaseOrIsland && Boolean(ctConfig?.enabled && regruesoValCm > 0);
+    const regruesoMm = hasRegrueso ? Math.round(regruesoValCm * 10) : stoneThickMm;
+    const faldonDropMm = hasRegrueso ? Math.max(0, regruesoMm - stoneThickMm) : 0;
 
     const frontInfo = getCabinetFrontThickness(cab, state.thickness || 1.8);
     const frontThickMm = frontInfo.hasFronts ? frontInfo.frontThickMm : 0;
@@ -2441,14 +2449,16 @@ export function KitchenBlueprint() {
             {/* 1. VISTA FRONTAL (X = 0 hasta cabW)                       */}
             {/* ======================================================== */}
             <g>
-              {/* Cubierta Krion Frontal (Espesor e={stoneThickMm}mm) */}
+              <rect x={0} y={0} width={cabW} height={bodyH} fill="#ffffff" stroke="#0f172a" strokeWidth={strokeElev * 1.5} />
+
+              {/* Cubierta Krion Frontal (Espesor e={stoneThickMm}mm o Faldón e={regruesoMm}mm) */}
               {hasCountertop && (
                 <g key="blueprint-countertop-frontal">
                   <rect
                     x={-2}
                     y={-stoneThickMm}
                     width={cabW + 4}
-                    height={stoneThickMm}
+                    height={hasRegrueso ? Math.max(stoneThickMm, regruesoMm) : stoneThickMm}
                     fill="#ecfeff"
                     stroke="#0891b2"
                     strokeWidth={strokeElev * 1.2}
@@ -2466,11 +2476,33 @@ export function KitchenBlueprint() {
                     textAnchor="middle"
                     fontFamily="monospace"
                   >
-                    CUBIERTA KRION {stoneThickMm}mm
+                    {hasRegrueso 
+                      ? `CUBIERTA KRION ${stoneThickMm}mm | FALDÓN ${regruesoMm}mm` 
+                      : `CUBIERTA KRION ${stoneThickMm}mm`}
                   </text>
+                  {/* Cota vertical del faldón si hay regrueso */}
+                  {hasRegrueso && faldonDropMm > 0 && (
+                    <g key="cota-faldon-frontal">
+                      <line x1={cabW + 12} y1={-stoneThickMm} x2={cabW + 12} y2={faldonDropMm} stroke="#0891b2" strokeWidth={strokeElev * 0.8} />
+                      <line x1={cabW + 4} y1={-stoneThickMm} x2={cabW + 18} y2={-stoneThickMm} stroke="#0891b2" strokeWidth={strokeElev * 0.6} />
+                      <line x1={cabW + 4} y1={faldonDropMm} x2={cabW + 18} y2={faldonDropMm} stroke="#0891b2" strokeWidth={strokeElev * 0.6} />
+                      <line x1={cabW + 12 - 3} y1={-stoneThickMm + 3} x2={cabW + 12 + 3} y2={-stoneThickMm - 3} stroke="#0891b2" strokeWidth={strokeElev * 1.2} />
+                      <line x1={cabW + 12 - 3} y1={faldonDropMm + 3} x2={cabW + 12 + 3} y2={faldonDropMm - 3} stroke="#0891b2" strokeWidth={strokeElev * 1.2} />
+                      <text
+                        x={cabW + 22}
+                        y={(-stoneThickMm + faldonDropMm) / 2 + 4}
+                        fontSize={Math.max(11, Math.round(fSizeElev * 0.30))}
+                        fill="#0891b2"
+                        fontWeight="bold"
+                        fontFamily="monospace"
+                        textAnchor="start"
+                      >
+                        {regruesoMm}
+                      </text>
+                    </g>
+                  )}
                 </g>
               )}
-              <rect x={0} y={0} width={cabW} height={bodyH} fill="#ffffff" stroke="#0f172a" strokeWidth={strokeElev * 1.5} />
               
               {/* Perfiles Gola L y Gola C en Vista Frontal */}
               {isBaseGola && (
@@ -2537,32 +2569,38 @@ export function KitchenBlueprint() {
               {/* Frentes / Puertas / Cajones según tipología exacta */}
               {cab.variant === 'hospital_meson_3drawers' ? (
                 (() => {
-                  const hA = Math.round(bodyH * 0.28);
-                  const hB = Math.round(bodyH * 0.28);
-                  const hC = bodyH - hA - hB;
-                  const handleH = 15;
                   const hConf = cab.handleConfig || kState.handleConfig;
                   const isKutz = !isBaseGola && hConf?.model === 'kutz_asa';
+                  const topGap = isKutz ? (35 + (hasRegrueso ? faldonDropMm : 0)) : 0;
+                  const interGap = isKutz ? 35 : 0;
+                  const availH = isKutz ? Math.max(30, bodyH - topGap - interGap * 2) : bodyH;
+                  const hA = isKutz ? Math.max(10, Math.round(availH * (148 / 486))) : Math.round(bodyH * 0.28);
+                  const hB = isKutz ? Math.max(10, Math.round(availH * (148 / 486))) : Math.round(bodyH * 0.28);
+                  const hC = availH - hA - hB;
+                  const handleH = 15;
                   const hasHandle = !isBaseGola && hConf && hConf.model !== 'none';
                   const hLen = hConf?.lengthMm || 128;
                   const handleName = (hConf?.model === 'forza' ? 'FORZA' : (hConf?.model || 'TIRADOR')).toUpperCase();
                   const cx1 = cabW / 2 - hLen / 2;
                   const barH = 10;
-                  const cyA = Math.round(hA * 0.60);
-                  const cyB = Math.round(hA + hB * 0.60);
-                  const cyC = Math.round(hA + hB + hC * 0.60);
+                  const yA = topGap;
+                  const yB = isKutz ? (topGap + hA + interGap) : hA;
+                  const yC = isKutz ? (yB + hB + interGap) : (hA + hB);
+                  const cyA = Math.round(yA + hA * 0.60);
+                  const cyB = Math.round(yB + hB * 0.60);
+                  const cyC = Math.round(yC + hC * 0.60);
 
                   return (
                     <g>
                       {/* Cajón A Superior */}
-                      <rect x={0} y={0} width={cabW} height={hA} fill="#ffffff" stroke="#0f172a" strokeWidth={strokeElev * 0.9} />
+                      <rect x={0} y={yA} width={cabW} height={hA} fill="#ffffff" stroke="#0f172a" strokeWidth={strokeElev * 0.9} />
                       {isKutz ? (
                         <>
                           {/* Perfil Tirador Asa Corrida KUTZ 12/18 en el canto superior */}
-                          <rect x={2} y={2} width={cabW - 4} height={handleH} fill="#1e293b" stroke="#0f172a" strokeWidth={strokeElev * 0.8} rx={1.5} />
-                          <line x1={4} y1={3} x2={cabW - 4} y2={3} stroke="#64748b" strokeWidth={strokeElev * 0.4} />
-                          <text x={cabW / 2 - 20} y={13} fontSize={Math.max(9, fSizeElev * 0.26)} fill="#ffffff" fontWeight="bold" textAnchor="middle" fontFamily="monospace">ASA CORRIDA KUTZ 12/18</text>
-                          <text x={cabW / 2 - 20} y={hA * 0.65} fontSize={Math.max(13, fSizeElev * 0.42)} fill="#0f172a" fontWeight="bold" textAnchor="middle" fontFamily="monospace">CAJÓN A (ANVER)</text>
+                          <rect x={2} y={yA + 2} width={cabW - 4} height={handleH} fill="#1e293b" stroke="#0f172a" strokeWidth={strokeElev * 0.8} rx={1.5} />
+                          <line x1={4} y1={yA + 3} x2={cabW - 4} y2={yA + 3} stroke="#64748b" strokeWidth={strokeElev * 0.4} />
+                          <text x={cabW / 2 - 20} y={yA + 13} fontSize={Math.max(9, fSizeElev * 0.26)} fill="#ffffff" fontWeight="bold" textAnchor="middle" fontFamily="monospace">ASA CORRIDA KUTZ 12/18</text>
+                          <text x={cabW / 2 - 20} y={yA + hA * 0.65} fontSize={Math.max(13, fSizeElev * 0.42)} fill="#0f172a" fontWeight="bold" textAnchor="middle" fontFamily="monospace">CAJÓN A (ANVER)</text>
                         </>
                       ) : (
                         <>
@@ -2584,13 +2622,13 @@ export function KitchenBlueprint() {
                       <text x={cabW - 25} y={Math.round(hA * (isKutz ? 0.60 : 0.50)) + 13} fontSize={Math.max(7.5, fSizeElev * 0.22)} fill="#475569" fontWeight="bold" textAnchor="middle">ANVER</text>
                       
                       {/* Cajón B Intermedio */}
-                      <rect x={0} y={hA} width={cabW} height={hB} fill="#ffffff" stroke="#0f172a" strokeWidth={strokeElev * 0.9} />
+                      <rect x={0} y={yB} width={cabW} height={hB} fill="#ffffff" stroke="#0f172a" strokeWidth={strokeElev * 0.9} />
                       {isKutz ? (
                         <>
-                          <rect x={2} y={hA + 2} width={cabW - 4} height={handleH} fill="#1e293b" stroke="#0f172a" strokeWidth={strokeElev * 0.8} rx={1.5} />
-                          <line x1={4} y1={hA + 3} x2={cabW - 4} y2={hA + 3} stroke="#64748b" strokeWidth={strokeElev * 0.4} />
-                          <text x={cabW / 2} y={hA + 13} fontSize={Math.max(9, fSizeElev * 0.26)} fill="#ffffff" fontWeight="bold" textAnchor="middle" fontFamily="monospace">ASA CORRIDA KUTZ 12/18</text>
-                          <text x={cabW / 2} y={hA + hB * 0.65} fontSize={Math.max(13, fSizeElev * 0.42)} fill="#475569" fontWeight="bold" textAnchor="middle" fontFamily="monospace">CAJÓN B (DUCASSE)</text>
+                          <rect x={2} y={yB + 2} width={cabW - 4} height={handleH} fill="#1e293b" stroke="#0f172a" strokeWidth={strokeElev * 0.8} rx={1.5} />
+                          <line x1={4} y1={yB + 3} x2={cabW - 4} y2={yB + 3} stroke="#64748b" strokeWidth={strokeElev * 0.4} />
+                          <text x={cabW / 2} y={yB + 13} fontSize={Math.max(9, fSizeElev * 0.26)} fill="#ffffff" fontWeight="bold" textAnchor="middle" fontFamily="monospace">ASA CORRIDA KUTZ 12/18</text>
+                          <text x={cabW / 2} y={yB + hB * 0.65} fontSize={Math.max(13, fSizeElev * 0.42)} fill="#475569" fontWeight="bold" textAnchor="middle" fontFamily="monospace">CAJÓN B (DUCASSE)</text>
                         </>
                       ) : (
                         <>
@@ -2607,13 +2645,13 @@ export function KitchenBlueprint() {
                       )}
                       
                       {/* Cajón C Inferior */}
-                      <rect x={0} y={hA + hB} width={cabW} height={hC} fill="#ffffff" stroke="#0f172a" strokeWidth={strokeElev * 0.9} />
+                      <rect x={0} y={yC} width={cabW} height={hC} fill="#ffffff" stroke="#0f172a" strokeWidth={strokeElev * 0.9} />
                       {isKutz ? (
                         <>
-                          <rect x={2} y={hA + hB + 2} width={cabW - 4} height={handleH} fill="#1e293b" stroke="#0f172a" strokeWidth={strokeElev * 0.8} rx={1.5} />
-                          <line x1={4} y1={hA + hB + 3} x2={cabW - 4} y2={hA + hB + 3} stroke="#64748b" strokeWidth={strokeElev * 0.4} />
-                          <text x={cabW / 2} y={hA + hB + 13} fontSize={Math.max(9, fSizeElev * 0.26)} fill="#ffffff" fontWeight="bold" textAnchor="middle" fontFamily="monospace">ASA CORRIDA KUTZ 12/18</text>
-                          <text x={cabW / 2} y={hA + hB + hC * 0.65} fontSize={Math.max(13, fSizeElev * 0.42)} fill="#475569" fontWeight="bold" textAnchor="middle" fontFamily="monospace">CAJÓN C (HÄFELE SOFT)</text>
+                          <rect x={2} y={yC + 2} width={cabW - 4} height={handleH} fill="#1e293b" stroke="#0f172a" strokeWidth={strokeElev * 0.8} rx={1.5} />
+                          <line x1={4} y1={yC + 3} x2={cabW - 4} y2={yC + 3} stroke="#64748b" strokeWidth={strokeElev * 0.4} />
+                          <text x={cabW / 2} y={yC + 13} fontSize={Math.max(9, fSizeElev * 0.26)} fill="#ffffff" fontWeight="bold" textAnchor="middle" fontFamily="monospace">ASA CORRIDA KUTZ 12/18</text>
+                          <text x={cabW / 2} y={yC + hC * 0.65} fontSize={Math.max(13, fSizeElev * 0.42)} fill="#475569" fontWeight="bold" textAnchor="middle" fontFamily="monospace">CAJÓN C (HÄFELE SOFT)</text>
                         </>
                       ) : (
                         <>
@@ -2648,43 +2686,47 @@ export function KitchenBlueprint() {
                   const leftDoorMeetX = leftDoorX + doorW;
                   const rightDoorMeetX = rightDoorX;
 
+                  const kutzDeductMm = isKutz ? 32 : 0;
+                  const doorTopY = (hasRegrueso ? faldonDropMm : 0) + (isKutz ? kutzDeductMm : (hasRegrueso ? 2 : 0));
+                  const doorH = bodyH - doorTopY - 2;
+
                   return (
                     <g>
                       {/* Casco o vano posterior */}
                       <rect x={0} y={0} width={cabW} height={bodyH} fill="#f8fafc" stroke="#0f172a" strokeWidth={strokeElev * 0.8} />
 
                       {/* Puerta 2 Hojas (Hoja Izquierda y Hoja Derecha separadas) */}
-                      <rect x={leftDoorX} y={0} width={doorW} height={bodyH} fill="#ffffff" stroke="#0f172a" strokeWidth={strokeElev * 1.2} />
-                      <rect x={rightDoorX} y={0} width={doorW} height={bodyH} fill="#ffffff" stroke="#0f172a" strokeWidth={strokeElev * 1.2} />
+                      <rect x={leftDoorX} y={doorTopY} width={doorW} height={doorH} fill="#ffffff" stroke="#0f172a" strokeWidth={strokeElev * 1.2} />
+                      <rect x={rightDoorX} y={doorTopY} width={doorW} height={doorH} fill="#ffffff" stroke="#0f172a" strokeWidth={strokeElev * 1.2} />
 
                       {isKutz ? (
                         <>
-                          {/* Asas Corridas KUTZ en ambas puertas */}
-                          <rect x={leftDoorX + 3} y={2} width={doorW - 6} height={14} fill="#1e293b" stroke="#0f172a" strokeWidth={strokeElev * 0.8} rx={2} />
-                          <rect x={rightDoorX + 3} y={2} width={doorW - 6} height={14} fill="#1e293b" stroke="#0f172a" strokeWidth={strokeElev * 0.8} rx={2} />
-                          <text x={leftDoorX + doorW / 2} y={12} fontSize={Math.max(9, fSizeElev * 0.26)} fill="#ffffff" fontWeight="bold" textAnchor="middle">KUTZ 12/18</text>
-                          <text x={rightDoorX + doorW / 2} y={12} fontSize={Math.max(9, fSizeElev * 0.26)} fill="#ffffff" fontWeight="bold" textAnchor="middle">KUTZ 12/18</text>
+                          {/* Asas Corridas KUTZ en ambas puertas montadas en canto superior */}
+                          <rect x={leftDoorX + 3} y={doorTopY} width={doorW - 6} height={14} fill="#1e293b" stroke="#0f172a" strokeWidth={strokeElev * 0.8} rx={2} />
+                          <rect x={rightDoorX + 3} y={doorTopY} width={doorW - 6} height={14} fill="#1e293b" stroke="#0f172a" strokeWidth={strokeElev * 0.8} rx={2} />
+                          <text x={leftDoorX + doorW / 2} y={doorTopY + 11} fontSize={Math.max(9, fSizeElev * 0.26)} fill="#ffffff" fontWeight="bold" textAnchor="middle">KUTZ 12/18</text>
+                          <text x={rightDoorX + doorW / 2} y={doorTopY + 11} fontSize={Math.max(9, fSizeElev * 0.26)} fill="#ffffff" fontWeight="bold" textAnchor="middle">KUTZ 12/18</text>
                         </>
                       ) : hasHandle ? (
                         <>
                           {/* Tirador Vertical Hoja Izquierda (a 45mm del borde de encuentro) */}
-                          <rect x={leftDoorMeetX - 45 - 6} y={70} width={12} height={hLen} fill="#1e293b" stroke="#0f172a" strokeWidth={strokeElev * 0.8} rx={2} />
-                          <circle cx={leftDoorMeetX - 45} cy={70 + 6} r={2.5} fill="#94a3b8" />
-                          <circle cx={leftDoorMeetX - 45} cy={70 + hLen - 6} r={2.5} fill="#94a3b8" />
-                          <text x={leftDoorMeetX - 45} y={70 + hLen + 14} fontSize={Math.max(7.5, fSizeElev * 0.20)} fill="#64748b" textAnchor="middle" fontFamily="monospace">{handleName}</text>
+                          <rect x={leftDoorMeetX - 45 - 6} y={doorTopY + 70} width={12} height={hLen} fill="#1e293b" stroke="#0f172a" strokeWidth={strokeElev * 0.8} rx={2} />
+                          <circle cx={leftDoorMeetX - 45} cy={doorTopY + 70 + 6} r={2.5} fill="#94a3b8" />
+                          <circle cx={leftDoorMeetX - 45} cy={doorTopY + 70 + hLen - 6} r={2.5} fill="#94a3b8" />
+                          <text x={leftDoorMeetX - 45} y={doorTopY + 70 + hLen + 14} fontSize={Math.max(7.5, fSizeElev * 0.20)} fill="#64748b" textAnchor="middle" fontFamily="monospace">{handleName}</text>
 
                           {/* Tirador Vertical Hoja Derecha (a 45mm del borde de encuentro) */}
-                          <rect x={rightDoorMeetX + 45 - 6} y={70} width={12} height={hLen} fill="#1e293b" stroke="#0f172a" strokeWidth={strokeElev * 0.8} rx={2} />
-                          <circle cx={rightDoorMeetX + 45} cy={70 + 6} r={2.5} fill="#94a3b8" />
-                          <circle cx={rightDoorMeetX + 45} cy={70 + hLen - 6} r={2.5} fill="#94a3b8" />
-                          <text x={rightDoorMeetX + 45} y={70 + hLen + 14} fontSize={Math.max(7.5, fSizeElev * 0.20)} fill="#64748b" textAnchor="middle" fontFamily="monospace">{handleName}</text>
+                          <rect x={rightDoorMeetX + 45 - 6} y={doorTopY + 70} width={12} height={hLen} fill="#1e293b" stroke="#0f172a" strokeWidth={strokeElev * 0.8} rx={2} />
+                          <circle cx={rightDoorMeetX + 45} cy={doorTopY + 70 + 6} r={2.5} fill="#94a3b8" />
+                          <circle cx={rightDoorMeetX + 45} cy={doorTopY + 70 + hLen - 6} r={2.5} fill="#94a3b8" />
+                          <text x={rightDoorMeetX + 45} y={doorTopY + 70 + hLen + 14} fontSize={Math.max(7.5, fSizeElev * 0.20)} fill="#64748b" textAnchor="middle" fontFamily="monospace">{handleName}</text>
                         </>
                       ) : null}
 
                       {/* Proyecciones de Apertura (Bisagras en costados, vértice al borde de encuentro) */}
-                      <path d={`M ${leftDoorX} 0 L ${leftDoorMeetX} ${bodyH / 2} L ${leftDoorX} ${bodyH} Z`} fill="none" stroke="#0284c7" strokeWidth={strokeElev * 0.8} strokeDasharray="5,5" />
-                      <path d={`M ${rightDoorX + doorW} 0 L ${rightDoorMeetX} ${bodyH / 2} L ${rightDoorX + doorW} ${bodyH} Z`} fill="none" stroke="#0284c7" strokeWidth={strokeElev * 0.8} strokeDasharray="5,5" />
-                      <text x={cabW / 2} y={bodyH * 0.55} fontSize={Math.max(16, fSizeElev * 0.48)} fill="#0284c7" fontWeight="bold" textAnchor="middle">2 PUERTAS CLÍNICAS ({cabW}mm)</text>
+                      <path d={`M ${leftDoorX} ${doorTopY} L ${leftDoorMeetX} ${doorTopY + doorH / 2} L ${leftDoorX} ${doorTopY + doorH} Z`} fill="none" stroke="#0284c7" strokeWidth={strokeElev * 0.8} strokeDasharray="5,5" />
+                      <path d={`M ${rightDoorX + doorW} ${doorTopY} L ${rightDoorMeetX} ${doorTopY + doorH / 2} L ${rightDoorX + doorW} ${doorTopY + doorH} Z`} fill="none" stroke="#0284c7" strokeWidth={strokeElev * 0.8} strokeDasharray="5,5" />
+                      <text x={cabW / 2} y={doorTopY + doorH * 0.55} fontSize={Math.max(16, fSizeElev * 0.48)} fill="#0284c7" fontWeight="bold" textAnchor="middle">2 PUERTAS CLÍNICAS ({cabW}mm)</text>
                     </g>
                   );
                 })()
@@ -2695,28 +2737,31 @@ export function KitchenBlueprint() {
                   const hasHandle = !isBaseGola && hConf && hConf.model !== 'none';
                   const hLen = hConf?.lengthMm || 128;
                   const handleName = (hConf?.model === 'forza' ? 'FORZA' : (hConf?.model || 'TIRADOR')).toUpperCase();
+                  const kutzDeductMm = isKutz ? 32 : 0;
+                  const doorTopY = (hasRegrueso ? faldonDropMm : 0) + (isKutz ? kutzDeductMm : (hasRegrueso ? 2 : 0));
+                  const doorH = bodyH - doorTopY - 2;
 
                   return (
                     <g>
                       {/* Puerta 1 Hoja */}
-                      <rect x={0} y={0} width={cabW} height={bodyH} fill="#ffffff" stroke="#0f172a" strokeWidth={strokeElev * 1.2} />
+                      <rect x={0} y={doorTopY} width={cabW} height={doorH} fill="#ffffff" stroke="#0f172a" strokeWidth={strokeElev * 1.2} />
                       {isKutz ? (
                         <>
                           {/* Perfil Tirador Asa Corrida KUTZ 12/18 en el canto superior */}
-                          <rect x={4} y={2} width={cabW - 8} height={14} fill="#1e293b" stroke="#0f172a" strokeWidth={strokeElev * 0.8} rx={2} />
-                          <text x={cabW / 2} y={12} fontSize={Math.max(11, fSizeElev * 0.30)} fill="#ffffff" fontWeight="bold" textAnchor="middle">ASA CORRIDA KUTZ 12/18</text>
+                          <rect x={4} y={doorTopY} width={cabW - 8} height={14} fill="#1e293b" stroke="#0f172a" strokeWidth={strokeElev * 0.8} rx={2} />
+                          <text x={cabW / 2} y={doorTopY + 11} fontSize={Math.max(11, fSizeElev * 0.30)} fill="#ffffff" fontWeight="bold" textAnchor="middle">ASA CORRIDA KUTZ 12/18</text>
                         </>
                       ) : hasHandle ? (
                         <>
-                          <rect x={cabW - 45 - 6} y={70} width={12} height={hLen} fill="#1e293b" stroke="#0f172a" strokeWidth={strokeElev * 0.8} rx={2} />
-                          <circle cx={cabW - 45} cy={70 + 6} r={2.5} fill="#94a3b8" />
-                          <circle cx={cabW - 45} cy={70 + hLen - 6} r={2.5} fill="#94a3b8" />
-                          <text x={cabW - 45} y={70 + hLen + 14} fontSize={Math.max(7.5, fSizeElev * 0.20)} fill="#64748b" textAnchor="middle" fontFamily="monospace">{handleName}</text>
+                          <rect x={cabW - 45 - 6} y={doorTopY + 70} width={12} height={hLen} fill="#1e293b" stroke="#0f172a" strokeWidth={strokeElev * 0.8} rx={2} />
+                          <circle cx={cabW - 45} cy={doorTopY + 70 + 6} r={2.5} fill="#94a3b8" />
+                          <circle cx={cabW - 45} cy={doorTopY + 70 + hLen - 6} r={2.5} fill="#94a3b8" />
+                          <text x={cabW - 45} y={doorTopY + 70 + hLen + 14} fontSize={Math.max(7.5, fSizeElev * 0.20)} fill="#64748b" textAnchor="middle" fontFamily="monospace">{handleName}</text>
                         </>
                       ) : null}
                       {/* Proyección Diédrica de Apertura Batiente (Bisagras en costado, tirador al extremo) */}
-                      <path d={`M 0 0 L ${cabW} ${bodyH / 2} L 0 ${bodyH} Z`} fill="none" stroke="#0284c7" strokeWidth={strokeElev * 0.8} strokeDasharray="5,5" />
-                      <text x={cabW / 2} y={bodyH * 0.55} fontSize={Math.max(16, fSizeElev * 0.48)} fill="#0284c7" fontWeight="bold" textAnchor="middle">1 PUERTA CLÍNICA ({cabW}mm)</text>
+                      <path d={`M 0 ${doorTopY} L ${cabW} ${doorTopY + doorH / 2} L 0 ${doorTopY + doorH} Z`} fill="none" stroke="#0284c7" strokeWidth={strokeElev * 0.8} strokeDasharray="5,5" />
+                      <text x={cabW / 2} y={doorTopY + doorH * 0.55} fontSize={Math.max(16, fSizeElev * 0.48)} fill="#0284c7" fontWeight="bold" textAnchor="middle">1 PUERTA CLÍNICA ({cabW}mm)</text>
                     </g>
                   );
                 })()
@@ -2854,7 +2899,10 @@ export function KitchenBlueprint() {
                 </g>
               ) : cab.variant === '2_doors' || cab.variant === 'wall_2_doors' || cab.variant === 'tall_2_doors' ? (
                 (() => {
-                  const yDoorT = isBaseGola ? 35 : 0;
+                  const hConf = cab.handleConfig || kState.handleConfig;
+                  const isKutz = !isBaseGola && hConf?.model === 'kutz_asa';
+                  const kutzDeductMm = (isBaseOrIsland && isKutz) ? 32 : 0;
+                  const yDoorT = isBaseGola ? 35 : ((isBaseOrIsland && hasRegrueso) ? (faldonDropMm + (kutzDeductMm > 0 ? kutzDeductMm : 2)) : (isBaseOrIsland ? kutzDeductMm : 0));
                   const yDoorMid = (yDoorT + bodyH) / 2;
                   return (
                     <g>
@@ -2876,7 +2924,10 @@ export function KitchenBlueprint() {
                 </g>
               ) : (
                 (() => {
-                  const yDoorT = isBaseGola ? 35 : 0;
+                  const hConf = cab.handleConfig || kState.handleConfig;
+                  const isKutz = !isBaseGola && hConf?.model === 'kutz_asa';
+                  const kutzDeductMm = (isBaseOrIsland && isKutz) ? 32 : 0;
+                  const yDoorT = isBaseGola ? 35 : ((isBaseOrIsland && hasRegrueso) ? (faldonDropMm + (kutzDeductMm > 0 ? kutzDeductMm : 2)) : (isBaseOrIsland ? kutzDeductMm : 0));
                   const yDoorMid = (yDoorT + bodyH) / 2;
                   return (
                     <path d={`M 0 ${yDoorT} L ${cabW} ${yDoorMid} L 0 ${bodyH} Z`} fill="none" stroke="#c026d3" strokeWidth={strokeElev * 0.8} strokeDasharray="4,4" />
@@ -3133,7 +3184,7 @@ export function KitchenBlueprint() {
                         );
                       })()}
 
-                      {/* Cota técnica de voladizo: 26 mm desde el borde del mueble al frente de cubierta */}
+                      {/* Cota técnica de voladizo desde el borde del mueble al frente de cubierta */}
                       {hasRegrueso && (() => {
                         const dimY = Math.max(22, regruesoMm - stoneThickMm + 24);
                         const tick = 4;
@@ -3145,7 +3196,7 @@ export function KitchenBlueprint() {
                             {/* Ticks a 45° */}
                             <line x1={fX - tick} y1={dimY + tick} x2={fX + tick} y2={dimY - tick} stroke="#2563eb" strokeWidth={strokeElev * 1.4} />
                             <line x1={ctFrontX - tick} y1={dimY + tick} x2={ctFrontX + tick} y2={dimY - tick} stroke="#2563eb" strokeWidth={strokeElev * 1.4} />
-                            {/* Texto 26 */}
+                            {/* Texto voladizo */}
                             <text
                               x={(fX + ctFrontX) / 2}
                               y={dimY + 14}
@@ -3155,7 +3206,25 @@ export function KitchenBlueprint() {
                               fontFamily="monospace"
                               textAnchor="middle"
                             >
-                              26
+                              {overhangMm}
+                            </text>
+
+                            {/* Cota técnica vertical de faldón frontal */}
+                            <line x1={ctFrontX + 12} y1={-stoneThickMm} x2={ctFrontX + 12} y2={-stoneThickMm + regruesoMm} stroke="#0891b2" strokeWidth={strokeElev * 0.8} />
+                            <line x1={ctFrontX + 4} y1={-stoneThickMm} x2={ctFrontX + 18} y2={-stoneThickMm} stroke="#0891b2" strokeWidth={strokeElev * 0.6} />
+                            <line x1={ctFrontX + 4} y1={-stoneThickMm + regruesoMm} x2={ctFrontX + 18} y2={-stoneThickMm + regruesoMm} stroke="#0891b2" strokeWidth={strokeElev * 0.6} />
+                            <line x1={ctFrontX + 12 - tick} y1={-stoneThickMm + tick} x2={ctFrontX + 12 + tick} y2={-stoneThickMm - tick} stroke="#0891b2" strokeWidth={strokeElev * 1.3} />
+                            <line x1={ctFrontX + 12 - tick} y1={-stoneThickMm + regruesoMm + tick} x2={ctFrontX + 12 + tick} y2={-stoneThickMm + regruesoMm - tick} stroke="#0891b2" strokeWidth={strokeElev * 1.3} />
+                            <text
+                              x={ctFrontX + 22}
+                              y={-stoneThickMm + regruesoMm / 2 + 4}
+                              fontSize={Math.max(11, fSizeElev * 0.30)}
+                              fill="#0891b2"
+                              fontWeight="bold"
+                              fontFamily="monospace"
+                              textAnchor="start"
+                            >
+                              {regruesoMm}
                             </text>
 
                             {/* Rótulo Radio R4 con flecha directriz */}
@@ -3198,9 +3267,10 @@ export function KitchenBlueprint() {
                       const backH_2d = isHosp3D ? (bodyH - backPartThick) : bodyH;
                       return (
                         <>
-                          <rect x={latX} y={0} width={backPartThick} height={backH_2d} fill="#cbd5e1" stroke="#475569" strokeWidth={strokeElev * 0.6} />
+                          {/* Fondo / trasera del gabinete retranqueado 2mm hacia el interior (margen de fabricación) */}
+                          <rect x={latX + 2} y={0} width={backPartThick} height={backH_2d} fill="#cbd5e1" stroke="#475569" strokeWidth={strokeElev * 0.6} />
                           <text 
-                            x={latX + backPartThick / 2} 
+                            x={latX + 2 + backPartThick / 2} 
                             y={backH_2d / 2} 
                             fontSize={Math.max(13, Math.round(fSizeElev * 0.34))} 
                             fill="#334155" 
@@ -3208,7 +3278,7 @@ export function KitchenBlueprint() {
                             strokeWidth={haloWidth}
                             paintOrder="stroke fill"
                             fontWeight="bold" 
-                            transform={`rotate(-90 ${latX + backPartThick / 2} ${backH_2d / 2})`} 
+                            transform={`rotate(-90 ${latX + 2 + backPartThick / 2} ${backH_2d / 2})`} 
                             textAnchor="middle"
                           >
                             {`FONDO ${backPartThick}mm`}
@@ -3318,12 +3388,15 @@ export function KitchenBlueprint() {
                     </g>
                   ) : cab.variant === 'hospital_meson_3drawers' ? (
                     (() => {
-                      const hA = Math.round(bodyH * 0.28);
-                      const hB = Math.round(bodyH * 0.28);
-                      const hC = bodyH - hA - hB;
                       const hConf = cab.handleConfig || kState.handleConfig;
                       const isKutz = !isBaseGola && hConf?.model === 'kutz_asa';
                       const hasHandle = !isBaseGola && hConf && hConf.model !== 'none';
+                      const topGap = isKutz ? 32 : 0;
+                      const interGap = isKutz ? 35 : 0;
+                      const availH = isKutz ? Math.max(30, bodyH - topGap - interGap * 2) : bodyH;
+                      const hA = isKutz ? Math.max(10, Math.round(availH * (148 / 486))) : Math.round(bodyH * 0.28);
+                      const hB = isKutz ? Math.max(10, Math.round(availH * (148 / 486))) : Math.round(bodyH * 0.28);
+                      const hC = availH - hA - hB;
                       const cyA = Math.round(hA * 0.60);
                       const cyB = Math.round(hA + hB * 0.60);
                       const cyC = Math.round(hA + hB + hC * 0.60);
@@ -3335,13 +3408,13 @@ export function KitchenBlueprint() {
                       const box2H = 100;
                       const box3H = 140;
 
-                      const box1Bot = Math.round(hA - 12);
+                      const box1Bot = isKutz ? (topGap + hA - 12) : Math.round(hA - 12);
                       const box1Top = box1Bot - box1H;
 
-                      const box2Bot = Math.round(hA + hB - 12);
+                      const box2Bot = isKutz ? (topGap + hA + interGap + hB - 12) : Math.round(hA + hB - 12);
                       const box2Top = box2Bot - box2H;
 
-                      const box3Bot = Math.round(bodyH - 24);
+                      const box3Bot = isKutz ? (bodyH - 12) : Math.round(bodyH - 24);
                       const box3Top = box3Bot - box3H;
 
                       const renderDrawerBox = (topY: number, h: number) => {
@@ -3352,12 +3425,12 @@ export function KitchenBlueprint() {
                           <g key={`box-${h}-${topY}`}>
                             {/* Caja exterior (laterales en gris técnico) */}
                             <rect x={boxStartX} y={topY} width={boxLen} height={h} fill="#f8fafc" stroke="#64748b" strokeWidth={strokeElev * 0.8} />
-                            {/* Trasera interior 18mm */}
-                            <rect x={boxStartX} y={topY} width={18} height={h} fill="#e2e8f0" stroke="#64748b" strokeWidth={strokeElev * 0.5} />
+                            {/* Trasera interior 18mm: desplazada 2mm hacia el interior (margen de fabricación según cota ~1.945mm) */}
+                            <rect x={boxStartX + 2} y={topY} width={18} height={h} fill="#e2e8f0" stroke="#64748b" strokeWidth={strokeElev * 0.5} />
                             {/* Contrafrente interior 18mm */}
                             <rect x={fX - 18} y={topY} width={18} height={h} fill="#e2e8f0" stroke="#64748b" strokeWidth={strokeElev * 0.5} />
-                            {/* Fondo estructurado */}
-                            <line x1={boxStartX} y1={botY - 14} x2={fX} y2={botY - 14} stroke="#94a3b8" strokeWidth={strokeElev * 0.5} strokeDasharray="3,2" />
+                            {/* Fondo estructurado (descuenta 2mm por retranqueo de trasera) */}
+                            <line x1={boxStartX + 2} y1={botY - 14} x2={fX} y2={botY - 14} stroke="#94a3b8" strokeWidth={strokeElev * 0.5} strokeDasharray="3,2" />
                             {/* Riel telescópico de fijación */}
                             <rect x={boxStartX - 4} y={botY - 24} width={boxLen + 8} height={12} fill="#cbd5e1" stroke="#475569" strokeWidth={strokeElev * 0.4} rx={1} />
                             <line x1={boxStartX} y1={botY - 18} x2={fX} y2={botY - 18} stroke="#0284c7" strokeWidth={strokeElev * 0.4} />
@@ -3400,9 +3473,10 @@ export function KitchenBlueprint() {
                             const topThick = isStructHpl ? (topSubMm === 18 ? 20 : 17) : topSubMm;
                             return (
                               <>
-                                <rect x={latX + topThick} y={0} width={cabD - topThick * 2} height={topThick} fill="#e2e8f0" stroke="#0f172a" strokeWidth={strokeElev * 0.9} />
+                                {/* Placa superior completa (descuenta 2mm por retranqueo de trasera a latX + 2) */}
+                                <rect x={latX + topThick + 2} y={0} width={cabD - topThick * 2 - 2} height={topThick} fill="#e2e8f0" stroke="#0f172a" strokeWidth={strokeElev * 0.9} />
                                 <text 
-                                  x={(latX + topThick + fX - topThick) / 2} 
+                                  x={(latX + topThick + 2 + fX - topThick) / 2} 
                                   y={-14} 
                                   fontSize={Math.max(14, Math.round(fSizeElev * 0.32))} 
                                   fill="#0284c7" 
@@ -3480,15 +3554,21 @@ export function KitchenBlueprint() {
 
                       if (isKutz) {
                         // Dimensiones técnicas reales de frente con Asa Corrida KUTZ 12/18 (Norma MC.2.02 / Detalle D1)
-                        // Luz libre de agarre para entrada de dedos = 22mm
+                        // Luz libre de agarre entre frentes de cajón = 35mm según plano CAD (Detalle Imagen 1 y 6)
                         // Altura de perfil Kutz = 16mm con labio ergonómico saliente
-                        const kutzGap = 22;
-                        const yA_top = kutzGap;
-                        const yA_bot = hA - 3;
-                        const yB_top = hA + kutzGap;
-                        const yB_bot = hA + hB - 3;
-                        const yC_top = hA + hB + kutzGap;
-                        const yC_bot = bodyH - 3;
+                        const topGap = 35;
+                        const kutzGap = 35;
+                        const availH = Math.max(30, bodyH - topGap - kutzGap * 2);
+                        const hA_lat = Math.max(10, Math.round(availH * (148 / 486)));
+                        const hB_lat = Math.max(10, Math.round(availH * (148 / 486)));
+                        const hC_lat = availH - hA_lat - hB_lat;
+
+                        const yA_top = topGap;
+                        const yA_bot = topGap + hA_lat;
+                        const yB_top = yA_bot + kutzGap;
+                        const yB_bot = yB_top + hB_lat;
+                        const yC_top = yB_bot + kutzGap;
+                        const yC_bot = yC_top + hC_lat;
 
                         // Render de sección técnica de perfil extruido KUTZ 12/18 sobre canto de 18mm
                         const renderKutzProfile = (yTop: number) => {
@@ -3617,7 +3697,7 @@ export function KitchenBlueprint() {
                               fontWeight="bold" 
                               fontFamily="monospace"
                             >
-                              LUZ 22mm
+                              LUZ 35mm
                             </text>
 
                             {/* Cota en Luz Cajón B / C */}
@@ -3634,7 +3714,7 @@ export function KitchenBlueprint() {
                               fontWeight="bold" 
                               fontFamily="monospace"
                             >
-                              LUZ 22mm
+                              LUZ 35mm
                             </text>
                           </g>
                         );
@@ -3685,8 +3765,8 @@ export function KitchenBlueprint() {
                       const fX = latX + carcassDepthMm;
 
                       if (isKutz) {
-                        const kutzGap = 22;
-                        const yDoorTop = kutzGap;
+                        const kutzDeductMm = 32;
+                        const yDoorTop = (hasRegrueso && faldonDropMm > 0) ? (faldonDropMm + kutzDeductMm) : kutzDeductMm;
                         const yDoorBot = bodyH - 3;
                         const lipH = 16;
                         const lipReach = 11;
@@ -3784,13 +3864,14 @@ export function KitchenBlueprint() {
                         );
                       }
 
+                      const yDoorTop = (hasRegrueso && faldonDropMm > 0) ? (faldonDropMm + 2) : 0;
                       return (
                         <g>
                           <rect 
                             x={fX} 
-                            y={0} 
+                            y={yDoorTop} 
                             width={frontThickMm} 
-                            height={bodyH} 
+                            height={bodyH - yDoorTop} 
                             fill="#ffffff" 
                             stroke="#0f172a" 
                             strokeWidth={strokeElev * 0.8} 
@@ -3798,23 +3879,31 @@ export function KitchenBlueprint() {
                           {hasHandle && (
                             <g>
                               {/* Tirador Vertical saliente (corte transversal a 70mm del borde sup.) */}
-                              <rect x={latX + cabD} y={70} width={26} height={12} fill="#1e293b" stroke="#0f172a" strokeWidth={strokeElev * 0.6} rx={1} />
-                              <rect x={latX + cabD + 22} y={70} width={4} height={12} fill="#334155" />
+                              <rect x={latX + cabD} y={yDoorTop + 70} width={26} height={12} fill="#1e293b" stroke="#0f172a" strokeWidth={strokeElev * 0.6} rx={1} />
+                              <rect x={latX + cabD + 22} y={yDoorTop + 70} width={4} height={12} fill="#334155" />
                             </g>
                           )}
                         </g>
                       );
                     })()
                   ) : (
-                    <rect 
-                      x={fX} 
-                      y={isBaseGola ? 35 : 0} 
-                      width={frontThickMm} 
-                      height={isBaseGola ? bodyH - 35 : bodyH} 
-                      fill="#f97316" 
-                      stroke="#ea580c" 
-                      strokeWidth={strokeElev * 0.8} 
-                    />
+                    (() => {
+                      const hConf = cab.handleConfig || kState.handleConfig;
+                      const isKutz = !isBaseGola && hConf?.model === 'kutz_asa';
+                      const kutzDeductMm = (isBaseOrIsland && isKutz) ? 32 : 0;
+                      const yDoorTop = isBaseGola ? 35 : ((hasRegrueso && faldonDropMm > 0) ? (faldonDropMm + (kutzDeductMm > 0 ? kutzDeductMm : 2)) : kutzDeductMm);
+                      return (
+                        <rect 
+                          x={fX} 
+                          y={yDoorTop} 
+                          width={frontThickMm} 
+                          height={bodyH - yDoorTop} 
+                          fill="#f97316" 
+                          stroke="#ea580c" 
+                          strokeWidth={strokeElev * 0.8} 
+                        />
+                      );
+                    })()
                   )}
                   
                   {/* Zócalo Lateral / Bastidor Metálico */}
@@ -5464,7 +5553,7 @@ export function KitchenBlueprint() {
                 <div className="flex gap-4 text-xs text-slate-600 mt-1 font-medium items-center flex-wrap">
                   {(() => {
                     const isStructHpl = cab.structureMaterial === 'hpl' || state.structureMaterial === 'hpl' || isHplFinish(cab.structureColor || state.structureColor, cab.structureMaterial || state.structureMaterial, cab);
-                    const structSubstrateMm = cab.hplSubstrateThickness || state.hplSubstrateThickness || 15;
+                    const structSubstrateMm = cab.hplSubstrateThicknessStructure || state.hplSubstrateThicknessStructure || cab.hplSubstrateThickness || state.hplSubstrateThickness || 15;
                     const structThickFinalMm = isStructHpl ? (structSubstrateMm === 18 ? 20 : 17) : thicknessMm;
                     const colorName = getColorName(cab.structureColor || state.structureColor);
                     return (
@@ -5476,7 +5565,7 @@ export function KitchenBlueprint() {
                     const activeFrontColor = isDrawerOnlyCabinet ? (cab.drawerFrontColor || state.drawerFrontColor || cab.doorColor || state.doorColor) : (cab.doorColor || state.doorColor);
                     const activeFrontMat = isDrawerOnlyCabinet ? (cab.drawerFrontMaterial || state.drawerFrontMaterial || 'melamina') : (cab.doorMaterial || state.doorMaterial);
                     const isFrontHpl = isHplFinish(activeFrontColor, activeFrontMat, isDrawerOnlyCabinet ? undefined : cab);
-                    const frontSubMm = cab.hplSubstrateThickness || state.hplSubstrateThickness || 15;
+                    const frontSubMm = cab.hplSubstrateThicknessDoors || state.hplSubstrateThicknessDoors || cab.hplSubstrateThickness || state.hplSubstrateThickness || 18;
                     const frontThickFinalMm = frontSubMm === 18 ? 20 : 17;
                     return (
                       <span><strong>Frentes:</strong> {isFrontHpl ? `${getColorName(activeFrontColor)} (HPL 0.9mm + Sustrato MDF ${frontSubMm}mm -> Espesor final ${frontThickFinalMm}mm)` : `${getColorName(activeFrontColor)} ${thicknessMm}mm`}</span>
@@ -5574,7 +5663,17 @@ export function KitchenBlueprint() {
                                 ? part.isHpl 
                                 : isHplFinish(part.material, cab.structureMaterial || state.structureMaterial, cab);
                               if (isHplPart && part.thickness > 4) {
-                                const subMm = cab.hplSubstrateThickness || state.hplSubstrateThickness || 15;
+                                const isFrontPiece = part.materialCategory === 'doors' || 
+                                  part.name.toLowerCase().includes('puerta') || 
+                                  (part.name.toLowerCase().includes('frente') && !part.name.toLowerCase().includes('contrafrente'));
+                                const isShelfPiece = part.name.toLowerCase().includes('repisa') || 
+                                  part.name.toLowerCase().includes('estante') || 
+                                  part.name.toLowerCase().includes('divisor');
+                                const subMm = isFrontPiece
+                                  ? (cab.hplSubstrateThicknessDoors || state.hplSubstrateThicknessDoors || cab.hplSubstrateThickness || state.hplSubstrateThickness || 18)
+                                  : isShelfPiece
+                                  ? (cab.hplSubstrateThicknessShelves || state.hplSubstrateThicknessShelves || cab.hplSubstrateThicknessStructure || state.hplSubstrateThicknessStructure || 15)
+                                  : (cab.hplSubstrateThicknessStructure || state.hplSubstrateThicknessStructure || cab.hplSubstrateThickness || state.hplSubstrateThickness || 15);
                                 const thickFinal = subMm === 18 ? 20 : (subMm === 15 ? 17 : subMm + 2);
                                 return `${thickFinal}mm (HPL s/ MDF ${subMm}mm)`;
                               }

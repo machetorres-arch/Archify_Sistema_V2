@@ -209,8 +209,6 @@ export function HospitalBaseFrameConfigSection({ isLight }: { isLight: boolean }
     setSocleHeight,
     hospitalFrameFinish = 'white',
     setHospitalFrameFinish,
-    clinicalEdgeBandingAllFreeEdges,
-    setClinicalEdgeBandingAllFreeEdges,
   } = useKitchenStore();
 
   const currentHeight = socleHeight ?? 30;
@@ -312,44 +310,6 @@ export function HospitalBaseFrameConfigSection({ isLight }: { isLight: boolean }
             );
           })}
         </div>
-      </div>
-
-      {/* 3. Tapacanto Sanitario en Caras Libres (Norma Sanitaria MINSAL) */}
-      <div className="pt-3 border-t border-slate-200 dark:border-white/10 space-y-2">
-        <div className="flex items-center justify-between">
-          <label className={`text-xs block ${isLight ? "font-bold text-slate-800" : "font-semibold text-slate-200"}`}>
-            Tapacanto Sanitario (Caras Libres)
-          </label>
-          <span className="text-[9px] px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 font-mono font-bold border border-emerald-500/30">
-            Norma MINSAL
-          </span>
-        </div>
-        <p className={`text-[11px] leading-relaxed ${isLight ? 'text-slate-600' : 'text-slate-400'}`}>
-          Aplica tapacanto a todas las caras expuestas sin contacto a tope con otra melamina (traseras a muro, repisas 4 cantos, cantos inferiores de cajones).
-        </p>
-        <button
-          type="button"
-          onClick={() => setClinicalEdgeBandingAllFreeEdges(!clinicalEdgeBandingAllFreeEdges)}
-          className={`w-full py-2.5 px-3 rounded-lg text-xs font-bold transition-all flex items-center justify-between border cursor-pointer ${
-            clinicalEdgeBandingAllFreeEdges
-              ? 'bg-orange-500 text-black border-orange-500 shadow-sm font-extrabold'
-              : isLight
-                ? 'bg-white border-slate-200 hover:border-orange-400 hover:bg-slate-50 text-slate-700'
-                : 'bg-white/5 border-white/10 hover:border-orange-500/50 hover:bg-white/10 text-slate-300'
-          }`}
-        >
-          <div className="flex items-center gap-2">
-            <ShieldCheck size={15} className={clinicalEdgeBandingAllFreeEdges ? 'text-black' : (isLight ? 'text-slate-500' : 'text-slate-400')} />
-            <span>{clinicalEdgeBandingAllFreeEdges ? 'Sellado Sanitario Activado' : 'Activar Canteado en Caras Libres'}</span>
-          </div>
-          <span className={`text-[10px] font-mono px-2 py-0.5 rounded-full ${
-            clinicalEdgeBandingAllFreeEdges 
-              ? 'bg-black text-white font-bold' 
-              : (isLight ? 'bg-slate-100 text-slate-600 border border-slate-200' : 'bg-white/10 text-slate-300')
-          }`}>
-            {clinicalEdgeBandingAllFreeEdges ? 'ACTIVO' : 'ESTÁNDAR'}
-          </span>
-        </button>
       </div>
     </div>
   );
@@ -709,7 +669,7 @@ export function KitchenConfigurator({ onNavigate }: { onNavigate: () => void }) 
 
   const isLight = theme === 'light';
 
-  const { viewMode, setViewMode, toolMode, setToolMode, cabinets, addCabinet, activeCabinetId, updateCabinet, removeCabinet, setActiveCabinet, applyGlobalTexture, showSocle, setShowSocle, socleFinish, setSocleFinish, socleHeight, setSocleHeight, roomConfig, setRoomPlannerOpen, walls, architecturalElements, activeArchElementId, addArchitecturalElement, updateArchitecturalElement, removeArchitecturalElement, setActiveArchElement, golaSystem, setGolaSystem, countertopConfig, setCountertopConfig, qstoneCatalog, islandBackConfig, setIslandBackConfig, mepPoints, handleConfig, undo, redo, canUndo, canRedo, projectMode, setProjectMode, hospitalBaseType, setHospitalBaseType, hospitalFrameFinish = 'white', setHospitalFrameFinish } = useKitchenStore();
+  const { viewMode, setViewMode, toolMode, setToolMode, cabinets, addCabinet, activeCabinetId, updateCabinet, removeCabinet, setActiveCabinet, applyGlobalTexture, showSocle, setShowSocle, socleFinish, setSocleFinish, socleHeight, setSocleHeight, roomConfig, setRoomPlannerOpen, walls, architecturalElements, activeArchElementId, addArchitecturalElement, updateArchitecturalElement, removeArchitecturalElement, setActiveArchElement, golaSystem, setGolaSystem, countertopConfig, setCountertopConfig, qstoneCatalog, islandBackConfig, setIslandBackConfig, mepPoints, handleConfig, undo, redo, canUndo, canRedo, projectMode, setProjectMode, hospitalBaseType, setHospitalBaseType, hospitalFrameFinish = 'white', setHospitalFrameFinish, clinicalEdgeBandingAllFreeEdges, setClinicalEdgeBandingAllFreeEdges } = useKitchenStore();
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -2679,6 +2639,44 @@ export function KitchenConfigurator({ onNavigate }: { onNavigate: () => void }) 
                           </button>
                         ))}
                       </div>
+                    </div>
+
+                    {/* Tapacanto Sanitario (Caras Libres) - Norma MINSAL */}
+                    <div className="pt-3 border-t border-slate-200 dark:border-white/10 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <label className={`text-xs block ${isLight ? "font-bold text-slate-800" : "font-semibold text-slate-200"}`}>
+                          Tapacanto Sanitario (Caras Libres)
+                        </label>
+                        <span className="text-[9px] px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 font-mono font-bold border border-emerald-500/30">
+                          Norma MINSAL
+                        </span>
+                      </div>
+                      <p className={`text-[11px] leading-relaxed ${isLight ? 'text-slate-600' : 'text-slate-400'}`}>
+                        Aplica tapacanto a todas las caras expuestas sin contacto a tope con otra melamina (traseras a muro, repisas 4 cantos, cantos inferiores de cajones).
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => setClinicalEdgeBandingAllFreeEdges(!clinicalEdgeBandingAllFreeEdges)}
+                        className={`w-full py-2.5 px-3 rounded-lg text-xs font-bold transition-all flex items-center justify-between border cursor-pointer ${
+                          clinicalEdgeBandingAllFreeEdges
+                            ? 'bg-orange-500 text-black border-orange-500 shadow-sm font-extrabold'
+                            : isLight
+                              ? 'bg-white border-slate-200 hover:border-orange-400 hover:bg-slate-50 text-slate-700'
+                              : 'bg-white/5 border-white/10 hover:border-orange-500/50 hover:bg-white/10 text-slate-300'
+                        }`}
+                      >
+                        <div className="flex items-center gap-2">
+                          <ShieldCheck size={15} className={clinicalEdgeBandingAllFreeEdges ? 'text-black' : (isLight ? 'text-slate-500' : 'text-slate-400')} />
+                          <span>{clinicalEdgeBandingAllFreeEdges ? 'Sellado Sanitario Activado' : 'Activar Canteado en Caras Libres'}</span>
+                        </div>
+                        <span className={`text-[10px] font-mono px-2 py-0.5 rounded-full ${
+                          clinicalEdgeBandingAllFreeEdges 
+                            ? 'bg-black text-white font-bold' 
+                            : (isLight ? 'bg-slate-100 text-slate-600 border border-slate-200' : 'bg-white/10 text-slate-300')
+                        }`}>
+                          {clinicalEdgeBandingAllFreeEdges ? 'ACTIVO' : 'ESTÁNDAR'}
+                        </span>
+                      </button>
                     </div>
                   </div>
                 </div>

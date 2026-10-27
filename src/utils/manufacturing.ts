@@ -311,17 +311,18 @@ export function generatePartsList(data: ManufacturingData): Part[] {
         notes: `Testero posterior interior (descuenta ${Math.round(thickness * 20)}mm laterales). Ancho ext. caja armada = ${drawerBoxOuterWidth}mm (Rieles 13mm c/lado)`
       });
 
+      const closetDrawerBottomDepth = drawerBoxLength - (2 * thickness * 10);
       parts.push({
         name: `Fondo Cajón (Melamina ${thickness * 10}mm) ${modName}`,
         moduleId: mod.id,
         moduleIndex: index,
         qty: mod.drawers,
-        length: drawerBoxLength,
+        length: closetDrawerBottomDepth,
         width: drawerFrontBackLength,
         thickness: thickness * 10,
         material: mod.overrides?.drawerInnerColor || (data as any).drawerInnerColor || (data as any).structureColor || 'Melamina Cuerpo',
         edgeL1: false, edgeL2: false, edgeW1: false, edgeW2: false,
-        notes: `Fondo melamina ${thickness * 10}mm encajado entre laterales (${drawerFrontBackLength}mm | caja ext. ${drawerBoxOuterWidth}mm)`
+        notes: `Fondo melamina ${thickness * 10}mm encajado interior en las 4 caras (${drawerFrontBackLength}x${closetDrawerBottomDepth}mm | caja ext. ${drawerBoxOuterWidth}x${drawerBoxLength}mm)`
       });
     }
 

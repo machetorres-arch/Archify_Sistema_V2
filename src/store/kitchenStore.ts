@@ -144,6 +144,9 @@ export interface CabinetType {
   grainElements?: Record<string, 'vertical' | 'horizontal'>;
   hplBalancer?: boolean;
   hplSubstrateThickness?: 15 | 18;
+  hplSubstrateThicknessStructure?: 15 | 18;
+  hplSubstrateThicknessDoors?: 15 | 18;
+  hplSubstrateThicknessShelves?: 15 | 18;
   isOpen?: boolean;
   openElements?: Record<string, boolean>;
   shelvesCount?: number;

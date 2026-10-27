@@ -161,29 +161,99 @@ export function Configurator() {
             <p className="text-[9px] text-slate-400 mb-2 leading-tight">
               Espesor de la placa de sustrato MDF donde se prensa el HPL.
             </p>
-            <div className="flex gap-2">
-              <button
-                type="button"
-                onClick={() => state.setHplSubstrateThickness(15)}
-                className={`flex-1 py-1.5 rounded text-[10px] uppercase tracking-wider font-bold transition-all cursor-pointer ${
-                  (state.hplSubstrateThickness || 15) === 15
-                    ? 'bg-orange-500 text-black shadow-[0_0_10px_rgba(249,115,22,0.25)]'
-                    : 'bg-white/5 text-slate-400 border border-white/10 hover:border-orange-500/50'
-                }`}
-              >
-                MDF 15 mm
-              </button>
-              <button
-                type="button"
-                onClick={() => state.setHplSubstrateThickness(18)}
-                className={`flex-1 py-1.5 rounded text-[10px] uppercase tracking-wider font-bold transition-all cursor-pointer ${
-                  state.hplSubstrateThickness === 18
-                    ? 'bg-orange-500 text-black shadow-[0_0_10px_rgba(249,115,22,0.25)]'
-                    : 'bg-white/5 text-slate-400 border border-white/10 hover:border-orange-500/50'
-                }`}
-              >
-                MDF 18 mm
-              </button>
+            <div className="flex flex-col gap-2">
+              <div className="flex flex-col gap-1">
+                <div className="flex justify-between items-center text-[9px] uppercase tracking-wider text-slate-400 font-bold">
+                  <span>Casco / Estructura:</span>
+                  <span className="text-orange-400 font-mono">{state.hplSubstrateThicknessStructure || 15} mm</span>
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => state.setHplSubstrateThicknessStructure(15)}
+                    className={`flex-1 py-1.5 rounded text-[10px] uppercase tracking-wider font-bold transition-all cursor-pointer ${
+                      (state.hplSubstrateThicknessStructure || 15) === 15
+                        ? 'bg-orange-500 text-black shadow-[0_0_10px_rgba(249,115,22,0.25)]'
+                        : 'bg-white/5 text-slate-400 border border-white/10 hover:border-orange-500/50'
+                    }`}
+                  >
+                    MDF 15 mm
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => state.setHplSubstrateThicknessStructure(18)}
+                    className={`flex-1 py-1.5 rounded text-[10px] uppercase tracking-wider font-bold transition-all cursor-pointer ${
+                      state.hplSubstrateThicknessStructure === 18
+                        ? 'bg-orange-500 text-black shadow-[0_0_10px_rgba(249,115,22,0.25)]'
+                        : 'bg-white/5 text-slate-400 border border-white/10 hover:border-orange-500/50'
+                    }`}
+                  >
+                    MDF 18 mm
+                  </button>
+                </div>
+              </div>
+
+              <div className="flex flex-col gap-1 pt-1 border-t border-orange-500/10">
+                <div className="flex justify-between items-center text-[9px] uppercase tracking-wider text-slate-400 font-bold">
+                  <span>Puertas / Frentes:</span>
+                  <span className="text-orange-400 font-mono">{state.hplSubstrateThicknessDoors || 18} mm</span>
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => state.setHplSubstrateThicknessDoors(15)}
+                    className={`flex-1 py-1.5 rounded text-[10px] uppercase tracking-wider font-bold transition-all cursor-pointer ${
+                      (state.hplSubstrateThicknessDoors || 18) === 15
+                        ? 'bg-orange-500 text-black shadow-[0_0_10px_rgba(249,115,22,0.25)]'
+                        : 'bg-white/5 text-slate-400 border border-white/10 hover:border-orange-500/50'
+                    }`}
+                  >
+                    MDF 15 mm
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => state.setHplSubstrateThicknessDoors(18)}
+                    className={`flex-1 py-1.5 rounded text-[10px] uppercase tracking-wider font-bold transition-all cursor-pointer ${
+                      (state.hplSubstrateThicknessDoors || 18) === 18
+                        ? 'bg-orange-500 text-black shadow-[0_0_10px_rgba(249,115,22,0.25)]'
+                        : 'bg-white/5 text-slate-400 border border-white/10 hover:border-orange-500/50'
+                    }`}
+                  >
+                    MDF 18 mm
+                  </button>
+                </div>
+              </div>
+
+              <div className="flex flex-col gap-1 pt-1 border-t border-orange-500/10">
+                <div className="flex justify-between items-center text-[9px] uppercase tracking-wider text-slate-400 font-bold">
+                  <span>Repisas / Estantes:</span>
+                  <span className="text-orange-400 font-mono">{state.hplSubstrateThicknessShelves || 15} mm</span>
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => state.setHplSubstrateThicknessShelves(15)}
+                    className={`flex-1 py-1.5 rounded text-[10px] uppercase tracking-wider font-bold transition-all cursor-pointer ${
+                      (state.hplSubstrateThicknessShelves || 15) === 15
+                        ? 'bg-orange-500 text-black shadow-[0_0_10px_rgba(249,115,22,0.25)]'
+                        : 'bg-white/5 text-slate-400 border border-white/10 hover:border-orange-500/50'
+                    }`}
+                  >
+                    MDF 15 mm
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => state.setHplSubstrateThicknessShelves(18)}
+                    className={`flex-1 py-1.5 rounded text-[10px] uppercase tracking-wider font-bold transition-all cursor-pointer ${
+                      (state.hplSubstrateThicknessShelves || 15) === 18
+                        ? 'bg-orange-500 text-black shadow-[0_0_10px_rgba(249,115,22,0.25)]'
+                        : 'bg-white/5 text-slate-400 border border-white/10 hover:border-orange-500/50'
+                    }`}
+                  >
+                    MDF 18 mm
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         </div>

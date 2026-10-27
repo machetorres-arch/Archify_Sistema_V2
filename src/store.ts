@@ -29,6 +29,8 @@ export interface ClosetModuleOverrides {
   openElements?: Record<string, boolean>;
   grainElements?: Record<string, 'vertical' | 'horizontal'>;
   hplBalancer?: boolean;
+  hplSubstrateThicknessStructure?: 15 | 18;
+  hplSubstrateThicknessDoors?: 15 | 18;
 }
 
 export interface ClosetModule {
@@ -71,7 +73,13 @@ export interface ClosetState {
   hplBalancer: boolean;
   setHplBalancer: (val: boolean) => void;
   hplSubstrateThickness: 15 | 18;
+  hplSubstrateThicknessStructure: 15 | 18;
+  hplSubstrateThicknessDoors: 15 | 18;
+  hplSubstrateThicknessShelves: 15 | 18;
   setHplSubstrateThickness: (t: 15 | 18) => void;
+  setHplSubstrateThicknessStructure: (t: 15 | 18) => void;
+  setHplSubstrateThicknessDoors: (t: 15 | 18) => void;
+  setHplSubstrateThicknessShelves: (t: 15 | 18) => void;
   showLeftWall: boolean;
   showRightWall: boolean;
   showBackWall: boolean;
@@ -292,6 +300,9 @@ export const useStore = create<ClosetState>((set, get) => {
   showBottomWall: true,
   hplBalancer: true,
   hplSubstrateThickness: 15,
+  hplSubstrateThicknessStructure: 15,
+  hplSubstrateThicknessDoors: 18,
+  hplSubstrateThicknessShelves: 15,
   showLeftWall: true,
   showRightWall: true,
   showBackWall: true,
@@ -476,7 +487,21 @@ export const useStore = create<ClosetState>((set, get) => {
   toggleTopWall: () => set((state) => ({ showTopWall: !state.showTopWall })),
   toggleBottomWall: () => set((state) => ({ showBottomWall: !state.showBottomWall })),
   setHplBalancer: (val) => set({ hplBalancer: val }),
-  setHplSubstrateThickness: (t) => set({ hplSubstrateThickness: t }),
+  setHplSubstrateThickness: (t) => set((state) => {
+    if (state.targetPart === 'doors' || state.targetPart === 'drawerFronts') {
+      return { hplSubstrateThicknessDoors: t, hplSubstrateThickness: t };
+    }
+    if (state.targetPart === 'shelves') {
+      return { hplSubstrateThicknessShelves: t, hplSubstrateThickness: t };
+    }
+    if (state.targetPart === 'structure' || state.targetPart === 'socle' || state.targetPart === 'back' || state.targetPart === 'coverPanels') {
+      return { hplSubstrateThicknessStructure: t, hplSubstrateThickness: t };
+    }
+    return { hplSubstrateThickness: t, hplSubstrateThicknessStructure: t, hplSubstrateThicknessDoors: t, hplSubstrateThicknessShelves: t };
+  }),
+  setHplSubstrateThicknessStructure: (t) => set({ hplSubstrateThicknessStructure: t, hplSubstrateThickness: t }),
+  setHplSubstrateThicknessDoors: (t) => set({ hplSubstrateThicknessDoors: t, hplSubstrateThickness: t }),
+  setHplSubstrateThicknessShelves: (t) => set({ hplSubstrateThicknessShelves: t, hplSubstrateThickness: t }),
   toggleLeftWall: () => set((state) => ({ showLeftWall: !state.showLeftWall })),
   toggleRightWall: () => set((state) => ({ showRightWall: !state.showRightWall })),
   toggleBackWall: () => set((state) => ({ showBackWall: !state.showBackWall })),

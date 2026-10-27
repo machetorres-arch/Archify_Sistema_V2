@@ -38,7 +38,13 @@ export const exportKitchenToExcel = () => {
 
       const cab = cabinets.find(c => c.id === p.moduleId);
       const isBalancer = cab?.hplBalancer !== undefined ? cab.hplBalancer : state.hplBalancer;
-      const substrateThick = cab?.hplSubstrateThickness || state.hplSubstrateThickness || 15;
+      const isFrontPiece = p.materialCategory === 'doors' || p.name.toLowerCase().includes('puerta') || p.name.toLowerCase().includes('frente');
+      const isShelfPiece = p.name.toLowerCase().includes('repisa') || p.name.toLowerCase().includes('estante') || p.name.toLowerCase().includes('divisor');
+      const substrateThick = isFrontPiece
+        ? (cab?.hplSubstrateThicknessDoors || state.hplSubstrateThicknessDoors || cab?.hplSubstrateThickness || state.hplSubstrateThickness || 18)
+        : isShelfPiece
+        ? (cab?.hplSubstrateThicknessShelves || state.hplSubstrateThicknessShelves || cab?.hplSubstrateThicknessStructure || state.hplSubstrateThicknessStructure || 15)
+        : (cab?.hplSubstrateThicknessStructure || state.hplSubstrateThicknessStructure || cab?.hplSubstrateThickness || state.hplSubstrateThickness || 15);
 
       if (isHPL) {
         if (isBalancer) {
