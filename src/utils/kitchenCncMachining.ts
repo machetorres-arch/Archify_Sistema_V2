@@ -502,7 +502,7 @@ export function calculateCncMachiningForPart(
     // Perforaciones para Tirador (lado opuesto a bisagras si no hay gola y requiere taladros pasantes)
     if (golaSystem === 'none' && handleConfig && handleConfig.model !== 'none') {
       const isSingleHole = handleConfig.model === 'balin' || handleConfig.model === 'berlin';
-      const isRearPestana = handleConfig.model === 'ce' || handleConfig.model === 'oslo';
+      const isRearPestana = handleConfig.model === 'ce' || handleConfig.model === 'oslo' || handleConfig.model === 'kutz_asa';
       const handleX = pw - 45;
       const handleCenterY = 70;
 

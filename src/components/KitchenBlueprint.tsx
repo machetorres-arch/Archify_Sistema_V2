@@ -1778,7 +1778,7 @@ export function KitchenBlueprint() {
               if (isGola || !hConf || hConf.model === 'none') return null;
 
               const isSingleHole = hConf.model === 'balin' || hConf.model === 'berlin';
-              const isRearPestana = hConf.model === 'ce' || hConf.model === 'oslo';
+              const isRearPestana = hConf.model === 'ce' || hConf.model === 'oslo' || hConf.model === 'kutz_asa';
               const handleX = pw - 45;
               const handleCenterY = 70;
 
