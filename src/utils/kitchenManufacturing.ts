@@ -613,7 +613,9 @@ export function generateKitchenPartsList(cabinets: CabinetType[]): Part[] {
     // 3. Techo o Barras de Armado
     const selectedProduct = kState.qstoneCatalog?.find(p => p.id === ctConfig?.selectedProductId);
     const isHospital3Drawers = cab.variant === 'hospital_meson_3drawers';
-    const requiresFullTop = (ctConfig?.enabled && selectedProduct?.materialType === 'sinterizado') || isHospitalModule;
+    const isBaseOrIslandVariant = cab.type === 'base' || cab.type === 'island';
+    const is1Or2DoorBase = isBaseOrIslandVariant && (cab.variant === '1_door' || cab.variant === '2_doors' || !cab.variant);
+    const requiresFullTop = (ctConfig?.enabled && selectedProduct?.materialType === 'sinterizado') || isHospitalModule || is1Or2DoorBase;
 
     if (cab.type === 'base' || cab.type === 'island') {
         if (requiresFullTop) {
@@ -621,9 +623,9 @@ export function generateKitchenPartsList(cabinets: CabinetType[]): Part[] {
             // Se descuentan 2 mm por el margen de fabricación del fondo retranqueado 2mm hacia el interior
             const topDepthMm = (isHospitalModule
               ? (carcassDepth - (isHospital3Drawers ? (structThickness * 2) : structThickness)) * 10
-              : carcassDepth * 10) - 2;
+              : (is1Or2DoorBase ? (carcassDepth - structThickness) * 10 : carcassDepth * 10)) - 2;
             parts.push({
-                name: isHospitalModule ? `Tapa Superior Completa ${cabName}` : `Tapa Melamina Completa (Soporte Sinterizado) ${cabName}`,
+                name: isHospitalModule ? `Tapa Superior Completa ${cabName}` : (is1Or2DoorBase ? `Tapa Superior ${cabName}` : `Tapa Melamina Completa (Soporte Sinterizado) ${cabName}`),
                 moduleId: cab.id,
                 moduleIndex: index,
                 qty: 1,
@@ -637,9 +639,9 @@ export function generateKitchenPartsList(cabinets: CabinetType[]): Part[] {
                     ? (isHospital3Drawers
                         ? 'Placa superior completa de melamina que topa con la trasera y con la barra frontal superior'
                         : 'Placa superior completa de melamina para soporte higiénico de cubierta clínica (MC.2.02)')
-                    : 'Tapa continua completa para soporte homogéneo de cubierta sinterizada 12mm'
+                    : (is1Or2DoorBase ? 'Tapa superior con rebaje para barra frontal superior de 68mm' : 'Tapa continua completa para soporte homogéneo de cubierta sinterizada 12mm')
             });
-            if (isHospital3Drawers) {
+            if (isHospital3Drawers || is1Or2DoorBase) {
                 // Barra frontal superior vertical (alto 68mm con tapacanto incluido según detalle CAD)
                 parts.push({
                     name: `Barra Frontal Superior Vertical ${cabName}`,
@@ -742,6 +744,8 @@ export function generateKitchenPartsList(cabinets: CabinetType[]): Part[] {
     const shelfSubstrateMm = cab.hplSubstrateThicknessShelves || state.hplSubstrateThicknessShelves || cab.hplSubstrateThicknessStructure || state.hplSubstrateThicknessStructure || cab.hplSubstrateThickness || state.hplSubstrateThickness || 15;
     const shelfThick = isCabShelfHpl ? (shelfSubstrateMm === 18 ? 20 : 17) : (thickness * 10);
     const shelfMat = cab.shelfColor || state.shelfColor || cab.structureColor || state.structureColor;
+    const shelfEdgeThickness = state.edgeBandingThicknessCabinets ?? 0.45;
+    const shelfCutLen = Math.round(((innerW * 10) - 2 - (2 * shelfEdgeThickness)) * 10) / 10;
 
     if (cab.variant === '2_doors' || cab.variant === '1_door' || cab.variant?.startsWith('corner_blind') || cab.variant === 'corner_blind' || ((cab.type === 'wall' || cab.type === 'base' || cab.type === 'island') && (!cab.variant || cab.variant?.includes('door')))) {
         const shelfQty = cab.shelvesCount !== undefined ? cab.shelvesCount : getDefaultShelvesCount(cab);
@@ -751,12 +755,12 @@ export function generateKitchenPartsList(cabinets: CabinetType[]): Part[] {
                 moduleId: cab.id,
                 moduleIndex: index,
                 qty: shelfQty,
-                length: (innerW - 0.2) * 10,
+                length: shelfCutLen,
                 width: (carcassDepth - 4) * 10,
                 thickness: shelfThick,
                 material: shelfMat,
                 isHpl: isCabShelfHpl,
-                edgeL1: true, edgeL2: false, edgeW1: false, edgeW2: false,
+                edgeL1: true, edgeL2: true, edgeW1: false, edgeW2: false,
                 notes: `${shelfQty} repisa(s) interior(es) regulable(s)`
             });
         }
@@ -768,12 +772,12 @@ export function generateKitchenPartsList(cabinets: CabinetType[]): Part[] {
                 moduleId: cab.id,
                 moduleIndex: index,
                 qty: shelfQty,
-                length: (innerW - 0.2) * 10,
+                length: shelfCutLen,
                 width: (carcassDepth - 4) * 10,
                 thickness: shelfThick,
                 material: shelfMat,
                 isHpl: isCabShelfHpl,
-                edgeL1: true, edgeL2: false, edgeW1: false, edgeW2: false,
+                edgeL1: true, edgeL2: true, edgeW1: false, edgeW2: false,
                 notes: `${shelfQty} repisas interiores de despensa alta`
             });
         }
@@ -797,12 +801,12 @@ export function generateKitchenPartsList(cabinets: CabinetType[]): Part[] {
                 moduleId: cab.id,
                 moduleIndex: index,
                 qty: lowerCount,
-                length: (innerW - 0.2) * 10,
+                length: shelfCutLen,
                 width: (carcassDepth - 4) * 10,
                 thickness: shelfThick,
                 material: shelfMat,
                 isHpl: isCabShelfHpl,
-                edgeL1: true, edgeL2: false, edgeW1: false, edgeW2: false,
+                edgeL1: true, edgeL2: true, edgeW1: false, edgeW2: false,
                 notes: `${lowerCount} repisa(s) en puerta inferior (línea base)`
             });
         }
@@ -812,12 +816,12 @@ export function generateKitchenPartsList(cabinets: CabinetType[]): Part[] {
                 moduleId: cab.id,
                 moduleIndex: index,
                 qty: upperCount,
-                length: (innerW - 0.2) * 10,
+                length: shelfCutLen,
                 width: (carcassDepth - 4) * 10,
                 thickness: shelfThick,
                 material: shelfMat,
                 isHpl: isCabShelfHpl,
-                edgeL1: true, edgeL2: false, edgeW1: false, edgeW2: false,
+                edgeL1: true, edgeL2: true, edgeW1: false, edgeW2: false,
                 notes: `${upperCount} repisa(s) en puerta superior (línea alta)`
             });
         }
@@ -868,12 +872,12 @@ export function generateKitchenPartsList(cabinets: CabinetType[]): Part[] {
                 moduleId: cab.id,
                 moduleIndex: index,
                 qty: lowerCount,
-                length: (innerW - 0.2) * 10,
+                length: shelfCutLen,
                 width: (carcassDepth - 4) * 10,
                 thickness: shelfThick,
                 material: shelfMat,
                 isHpl: isCabShelfHpl,
-                edgeL1: true, edgeL2: false, edgeW1: false, edgeW2: false,
+                edgeL1: true, edgeL2: true, edgeW1: false, edgeW2: false,
                 notes: `${lowerCount} repisa(s) en puerta inferior (0-70cm)`
             });
         }
@@ -883,12 +887,12 @@ export function generateKitchenPartsList(cabinets: CabinetType[]): Part[] {
                 moduleId: cab.id,
                 moduleIndex: index,
                 qty: upperCount,
-                length: (innerW - 0.2) * 10,
+                length: shelfCutLen,
                 width: (carcassDepth - 4) * 10,
                 thickness: shelfThick,
                 material: shelfMat,
                 isHpl: isCabShelfHpl,
-                edgeL1: true, edgeL2: false, edgeW1: false, edgeW2: false,
+                edgeL1: true, edgeL2: true, edgeW1: false, edgeW2: false,
                 notes: `${upperCount} repisa(s) en puerta superior (sobre hornos)`
             });
         }
@@ -926,12 +930,12 @@ export function generateKitchenPartsList(cabinets: CabinetType[]): Part[] {
                 moduleId: cab.id,
                 moduleIndex: index,
                 qty: lowerCount,
-                length: (innerW - 0.2) * 10,
+                length: shelfCutLen,
                 width: (carcassDepth - 4) * 10,
                 thickness: shelfThick,
                 material: shelfMat,
                 isHpl: isCabShelfHpl,
-                edgeL1: true, edgeL2: false, edgeW1: false, edgeW2: false,
+                edgeL1: true, edgeL2: true, edgeW1: false, edgeW2: false,
                 notes: `${lowerCount} repisa(s) en puerta inferior (0-70cm)`
             });
         }
@@ -941,12 +945,12 @@ export function generateKitchenPartsList(cabinets: CabinetType[]): Part[] {
                 moduleId: cab.id,
                 moduleIndex: index,
                 qty: upperCount,
-                length: (innerW - 0.2) * 10,
+                length: shelfCutLen,
                 width: (carcassDepth - 4) * 10,
                 thickness: shelfThick,
                 material: shelfMat,
                 isHpl: isCabShelfHpl,
-                edgeL1: true, edgeL2: false, edgeW1: false, edgeW2: false,
+                edgeL1: true, edgeL2: true, edgeW1: false, edgeW2: false,
                 notes: `${upperCount} repisa(s) en puerta superior (sobre nicho)`
             });
         }
@@ -956,11 +960,11 @@ export function generateKitchenPartsList(cabinets: CabinetType[]): Part[] {
             moduleId: cab.id,
             moduleIndex: index,
             qty: 5,
-            length: (innerW - 0.2) * 10,
+            length: shelfCutLen,
             width: (d - 2) * 10,
             thickness: thickness * 10,
             material: cab.shelfColor || state.structureColor,
-            edgeL1: true, edgeL2: false, edgeW1: false, edgeW2: false,
+            edgeL1: true, edgeL2: true, edgeW1: false, edgeW2: false,
             notes: '5 repisas vistas distribuidas simétricamente'
         });
     } else if (cab.variant?.includes('wine_rack')) {

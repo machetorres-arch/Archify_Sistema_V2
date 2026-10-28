@@ -2600,7 +2600,7 @@ export function KitchenBlueprint() {
                           <rect x={2} y={yA + 2} width={cabW - 4} height={handleH} fill="#1e293b" stroke="#0f172a" strokeWidth={strokeElev * 0.8} rx={1.5} />
                           <line x1={4} y1={yA + 3} x2={cabW - 4} y2={yA + 3} stroke="#64748b" strokeWidth={strokeElev * 0.4} />
                           <text x={cabW / 2 - 20} y={yA + 13} fontSize={Math.max(9, fSizeElev * 0.26)} fill="#ffffff" fontWeight="bold" textAnchor="middle" fontFamily="monospace">ASA CORRIDA KUTZ 12/18</text>
-                          <text x={cabW / 2 - 20} y={yA + hA * 0.65} fontSize={Math.max(13, fSizeElev * 0.42)} fill="#0f172a" fontWeight="bold" textAnchor="middle" fontFamily="monospace">CAJÓN A (ANVER)</text>
+                          <text x={cabW / 2 - 20} y={yA + hA * 0.65} fontSize={Math.max(13, fSizeElev * 0.42)} fill="#0f172a" fontWeight="bold" textAnchor="middle" fontFamily="monospace">CAJÓN A (DUCASSE)</text>
                         </>
                       ) : (
                         <>

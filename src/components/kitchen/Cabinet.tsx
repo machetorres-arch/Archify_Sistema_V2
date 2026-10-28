@@ -1542,6 +1542,17 @@ export function Cabinet({ id, type, variant, width, height, depth, position, rot
             return (
                <>
                   {isGolaActive && renderGolaL()}
+                  {(type === 'base' || type === 'island') && !isGolaActive && (
+                     <>
+                        <Board
+                           position={[0, legsHeight + cabH - 3.4, depth / 2 - thickness / 2]}
+                           args={[innerW, 6.8, thickness]}
+                           {...parseColor(cStructure, structureMaterial, 'structure')}
+                        />
+                        <VerticalRailJoint xPos={-innerW / 2} yCenter={legsHeight + cabH - 3.4} zPos={depth / 2 - thickness / 2} thickness={thickness} isLeft={true} />
+                        <VerticalRailJoint xPos={innerW / 2} yCenter={legsHeight + cabH - 3.4} zPos={depth / 2 - thickness / 2} thickness={thickness} isLeft={false} />
+                     </>
+                  )}
                   <AnimatedDoor
                      position={[0, doorY, frontZ]}
                      doorW={doorW}
@@ -1988,6 +1999,17 @@ export function Cabinet({ id, type, variant, width, height, depth, position, rot
             return (
                <>
                   {isGolaActive && renderGolaL()}
+                  {(type === 'base' || type === 'island') && !isGolaActive && (
+                     <>
+                        <Board
+                           position={[0, legsHeight + cabH - 3.4, depth / 2 - thickness / 2]}
+                           args={[innerW, 6.8, thickness]}
+                           {...parseColor(cStructure, structureMaterial, 'structure')}
+                        />
+                        <VerticalRailJoint xPos={-innerW / 2} yCenter={legsHeight + cabH - 3.4} zPos={depth / 2 - thickness / 2} thickness={thickness} isLeft={true} />
+                        <VerticalRailJoint xPos={innerW / 2} yCenter={legsHeight + cabH - 3.4} zPos={depth / 2 - thickness / 2} thickness={thickness} isLeft={false} />
+                     </>
+                  )}
                   <AnimatedDoor
                      key="door-left"
                      position={[leftDoorX, doorY, frontZ]}
@@ -2232,7 +2254,7 @@ export function Cabinet({ id, type, variant, width, height, depth, position, rot
                   <group>
                      {renderUndermountDrawer('d2', yA, hA, parseColor(cDrawers, drawerFrontMaterial, 'drawer-a'), 'drawer-a', 8.0)}
                      {/* Cerradura Trampa ANVER en cara frontal derecha superior */}
-                     <mesh position={[width / 2 - 4.5, yA + hA / 2 - 3.2, frontZ + thickness / 2 + 0.15]}>
+                     <mesh position={[width / 2 - 4.5, yA + hA / 2 - 3.2, frontZ + thickness / 2 + 0.15]} rotation={[Math.PI / 2, 0, 0]}>
                         <cylinderGeometry args={[0.9, 0.9, 0.3, 16]} />
                         <meshStandardMaterial color="#cbd5e1" metalness={0.9} roughness={0.2} />
                      </mesh>
