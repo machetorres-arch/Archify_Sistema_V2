@@ -623,9 +623,14 @@ export function KitchenCountertop3D() {
               ? (countertopConfig.islandWaterfallRight ?? countertopConfig.waterfallRight)
               : (countertopConfig.baseWaterfallRight ?? countertopConfig.waterfallRight));
 
-        const frontOverhang = (run.overhangFrontMm ?? (countertopConfig.overhangFrontCm ? countertopConfig.overhangFrontCm * 10 : 20)) / 10;
+        const frontOverhang = (run.overhangFrontMm !== undefined && run.overhangFrontMm > 0
+          ? run.overhangFrontMm
+          : (regruesoCm > 0
+              ? 30
+              : (countertopConfig.overhangFrontCm ? countertopConfig.overhangFrontCm * 10 : 0))) / 10;
         const rearOverhang = (run.overhangRearMm ?? (isIsland ? (countertopConfig.overhangBackCm ?? countertopConfig.islandOverhangCm ?? 30) * 10 : 0)) / 10;
-        const localZShift = (frontOverhang - rearOverhang) / 2;
+        const extraFront = Math.max(0, frontOverhang - (regruesoCm > 0 ? 3.0 : 0));
+        const localZShift = isIsland ? (frontOverhang - rearOverhang) / 2 : (extraFront - rearOverhang) / 2;
 
         // Verificar si la corrida contiene el lavaplatos o la encimera
         const sinkCabinet = run.cabinets.find(
@@ -874,12 +879,12 @@ export function KitchenCountertop3D() {
 
               return (
                 <group>
-                  {/* Faldón frontal continuo exterior (sobresale frontOverhang = 26 mm desde el borde del mueble) */}
+                  {/* Faldón frontal continuo exterior (enrasado en la cara frontal exterior a 600 mm del muro) */}
                   <mesh
                     position={[
                       apronShiftX,
                       cabTopY + stoneThicknessCm - regruesoCm / 2,
-                      run.cabinets[0].depth / 2 + frontOverhang - stoneThicknessCm / 2,
+                      localZShift + depthCm / 2 - stoneThicknessCm / 2,
                     ]}
                     castShadow={!isTransparent}
                     receiveShadow={!isTransparent}
@@ -889,13 +894,13 @@ export function KitchenCountertop3D() {
                     {isTransparent && <Edges scale={1} threshold={15} color="#555555" />}
                   </mesh>
 
-                  {/* Tira interior de refuerzo/armado bajo cubierta (segunda pieza según detalle CAD) */}
+                  {/* Tira interior de refuerzo/armado bajo cubierta (segunda pieza según detalle CAD, hasta el frente del casco a 570 mm) */}
                   {frontOverhang > stoneThicknessCm && (
                     <mesh
                       position={[
                         apronShiftX,
                         cabTopY + stoneThicknessCm - regruesoCm / 2,
-                        run.cabinets[0].depth / 2 + (frontOverhang - stoneThicknessCm) / 2,
+                        localZShift + depthCm / 2 - stoneThicknessCm - (frontOverhang - stoneThicknessCm) / 2,
                       ]}
                       castShadow={!isTransparent}
                       receiveShadow={!isTransparent}

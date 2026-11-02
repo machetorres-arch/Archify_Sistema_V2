@@ -791,11 +791,6 @@ export function CountertopConfigModal({ isOpen, onClose, isLight: isLightProp }:
                             type="button"
                             onClick={() => {
                               const partial: Partial<CountertopRunOverride> = { regruesoCm: val };
-                              if (val > 0 && (effectiveFrontOverhang === 2 || effectiveFrontOverhang === undefined)) {
-                                partial.overhangFrontCm = 2.6; // 26 mm según detalle de plano CAD
-                              } else if (val === 0 && effectiveFrontOverhang === 2.6) {
-                                partial.overhangFrontCm = 2.0;
-                              }
                               updateRunOverride(currentRun.id, partial);
                             }}
                             className={`py-2 px-3 rounded-lg text-xs font-semibold border transition cursor-pointer ${
@@ -823,11 +818,6 @@ export function CountertopConfigModal({ isOpen, onClose, isLight: isLightProp }:
                           onChange={(e) => {
                             const val = Number(Number(e.target.value).toFixed(1));
                             const partial: Partial<CountertopRunOverride> = { regruesoCm: val };
-                            if (val > 0 && (effectiveFrontOverhang === 2 || effectiveFrontOverhang === undefined)) {
-                              partial.overhangFrontCm = 2.6;
-                            } else if (val === 0 && effectiveFrontOverhang === 2.6) {
-                              partial.overhangFrontCm = 2.0;
-                            }
                             updateRunOverride(currentRun.id, partial);
                           }}
                           className="flex-1 accent-amber-500 cursor-pointer"
@@ -1221,14 +1211,8 @@ export function CountertopConfigModal({ isOpen, onClose, isLight: isLightProp }:
                             });
                             return;
                           }
-                          const newFront = val > 0
-                            ? (countertopConfig.baseOverhangFrontCm === 2 || !countertopConfig.baseOverhangFrontCm ? 2.6 : countertopConfig.baseOverhangFrontCm)
-                            : (countertopConfig.baseOverhangFrontCm === 2.6 ? 2 : countertopConfig.baseOverhangFrontCm);
                           setCountertopConfig({
                             regruesoCm: val,
-                            baseOverhangFrontCm: newFront,
-                            islandOverhangFrontCm: val > 0 && (countertopConfig.islandOverhangFrontCm === 2 || !countertopConfig.islandOverhangFrontCm) ? 2.6 : countertopConfig.islandOverhangFrontCm,
-                            overhangFrontCm: newFront,
                           });
                         }}
                         className={`py-2 px-3 rounded-lg text-xs font-semibold border transition relative cursor-pointer ${

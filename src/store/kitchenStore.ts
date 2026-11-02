@@ -712,7 +712,7 @@ export const useKitchenStore = create<KitchenState>((set, get) => {
           ...state.countertopConfig,
           enabled: true,
           selectedProductId: 'krion-snow-white-12',
-          baseOverhangFrontCm: 2,
+          baseOverhangFrontCm: 0,
           regruesoCm: 0, // Canto 12mm macizo Krion pulido sin filo
         }
       }));

@@ -634,17 +634,19 @@ export function detectContinuousCabinetRuns(
       const effectiveRegrueso = isIsland
         ? (config?.islandRegruesoCm ?? config?.regruesoCm ?? 0)
         : (config?.baseRegruesoCm ?? config?.regruesoCm ?? 0);
-      const defaultFrontOverhang = effectiveRegrueso > 0 ? 2.6 : 2;
+      const defaultFrontOverhang = effectiveRegrueso > 0 ? 3.0 : 0; // 30 mm según planos técnicos (570 mm casco + 30 mm vuelo = 600 mm total)
       const configuredFrontOverhang = isIsland
         ? (config?.islandOverhangFrontCm ?? config?.overhangFrontCm)
         : (config?.baseOverhangFrontCm ?? config?.overhangFrontCm);
-      const overhangFront = configuredFrontOverhang !== undefined
-        ? (effectiveRegrueso > 0 && configuredFrontOverhang === 2 ? 2.6 : configuredFrontOverhang)
+      const rawFront = (configuredFrontOverhang !== undefined && configuredFrontOverhang > 0)
+        ? configuredFrontOverhang
         : defaultFrontOverhang;
+      const overhangFront = rawFront;
       const overhangRear = isIsland
         ? (config?.islandOverhangBackCm ?? config?.islandOverhangCm ?? config?.overhangBackCm ?? 30)
         : 0; // Muebles base contra muro SIEMPRE tienen 0 mm de voladizo posterior
-      const depthMm = Math.round(((chain[0].depth || 60) + overhangFront + overhangRear) * 10);
+      // La profundidad nominal configurada (ej: 600 mm) representa la profundidad total acabada de la cubierta contra muro.
+      const depthMm = Math.round(((chain[0].depth || 60) + (isIsland ? (overhangFront + overhangRear) : 0)) * 10);
       // Altura exacta de la cara superior de los gabinetes de la corrida (apoyo real sin flotar)
       const cabTopCm = Math.max(
         ...chain.map((c) =>
@@ -755,17 +757,18 @@ export function detectContinuousCabinetRuns(
     const effectiveRegrueso = isIsland
       ? (config?.islandRegruesoCm ?? config?.regruesoCm ?? 0)
       : (config?.baseRegruesoCm ?? config?.regruesoCm ?? 0);
-    const defaultFrontOverhang = effectiveRegrueso > 0 ? 2.6 : 2;
+    const defaultFrontOverhang = effectiveRegrueso > 0 ? 3.0 : 0;
     const configuredFrontOverhang = isIsland
       ? (config?.islandOverhangFrontCm ?? config?.overhangFrontCm)
       : (config?.baseOverhangFrontCm ?? config?.overhangFrontCm);
-    const overhangFront = configuredFrontOverhang !== undefined
-      ? (effectiveRegrueso > 0 && configuredFrontOverhang === 2 ? 2.6 : configuredFrontOverhang)
+    const rawFront = (configuredFrontOverhang !== undefined && configuredFrontOverhang > 0)
+      ? configuredFrontOverhang
       : defaultFrontOverhang;
+    const overhangFront = rawFront;
     const overhangRear = isIsland
       ? (config?.islandOverhangBackCm ?? config?.islandOverhangCm ?? config?.overhangBackCm ?? 30)
       : 0;
-    const depthMm = Math.round(((cab.depth || 60) + overhangFront + overhangRear) * 10);
+    const depthMm = Math.round(((cab.depth || 60) + (isIsland ? (overhangFront + overhangRear) : 0)) * 10);
     const cabTopCm = cab.position ? cab.position[1] + cab.height / 2 : cab.height || 85;
     const heightMm = Math.round(cabTopCm * 10);
 
@@ -926,16 +929,19 @@ export function detectContinuousCabinetRuns(
           ? (config?.islandRegruesoCm ?? config?.regruesoCm ?? 0)
           : (config?.baseRegruesoCm ?? config?.regruesoCm ?? 0));
     if (override?.overhangFrontCm !== undefined) {
-      run.overhangFrontMm = Math.round(override.overhangFrontCm * 10);
-    } else if (effectiveRunRegrueso > 0 && (run.overhangFrontMm === 20 || !run.overhangFrontMm)) {
-      run.overhangFrontMm = 26; // Sobresale 26 mm desde el borde frontal del mueble
+      const oFront = override.overhangFrontCm > 0
+        ? override.overhangFrontCm
+        : (effectiveRunRegrueso > 0 ? 3.0 : 0);
+      run.overhangFrontMm = Math.round(oFront * 10);
+    } else if (effectiveRunRegrueso > 0 && (!run.overhangFrontMm || run.overhangFrontMm === 0)) {
+      run.overhangFrontMm = 30;
     }
     if (override?.overhangBackCm !== undefined && isIsland) {
       run.overhangRearMm = Math.round(override.overhangBackCm * 10);
     }
     // Re-calcular depthMm si cambiaron los voladizos
     const cabDepth = run.cabinets[0]?.depth || 60;
-    run.depthMm = Math.round(cabDepth * 10) + (run.overhangFrontMm || 0) + (run.overhangRearMm || 0);
+    run.depthMm = Math.round(cabDepth * 10) + (run.type === 'island' ? ((run.overhangFrontMm || 0) + (run.overhangRearMm || 0)) : 0);
   }
 
   return runs;
@@ -1315,7 +1321,21 @@ export function generateCountertopPieces(
 
   const product = catalog.find((p) => p.id === config.selectedProductId) || catalog[0];
   const maxSegmentLengthMm = config.buildingType === 'edificio' ? 2000 : 2500;
-  const pieces: CountertopPiece[] = [];
+  const rawPieces: CountertopPiece[] = [];
+
+  const isKrion = product.materialType === 'solid_surface';
+  const addPiece = (piece: CountertopPiece) => {
+    const allowance = isKrion ? 4 : 0; // +2mm a cada cara/lado para corte y escuadrado en taller (+4mm total)
+    const finalLength = piece.lengthMm + allowance;
+    const finalWidth = piece.widthMm + allowance;
+    rawPieces.push({
+      ...piece,
+      lengthMm: finalLength, // Corte taller con sobremedida: ej. 900 + 4 = 904 mm
+      widthMm: finalWidth,   // Corte taller con sobremedida: ej. 600 + 4 = 604 mm
+      areaM2: Number(((finalLength * finalWidth) / 1000000).toFixed(3)),
+      notes: isKrion ? `${piece.notes || ''} [Sobremedida taller +2mm/cara]`.trim() : piece.notes,
+    });
+  };
 
   const continuousRuns = detectContinuousCabinetRuns(cabinets, config, walls, architecturalElements, roomConfig);
   if (continuousRuns.length === 0) return null;
@@ -1391,7 +1411,7 @@ export function generateCountertopPieces(
       else if (hasCooktopInRun) cutoutType = 'cooktop';
 
       // 1. Tramo horizontal de cubierta (cubre la totalidad de la superficie hasta el muro/pilar y voladizos)
-      pieces.push({
+      addPiece({
         id: pieceId,
         name: slabName,
         type: 'slab',
@@ -1409,11 +1429,11 @@ export function generateCountertopPieces(
         hasCutout: cutoutType,
       });
 
-      // 2. Faldón Delantero / Regrueso
+      // 2. Faldón Delantero y Regrueso Posterior
       if (runRegruesoCm > 0) {
         const apronHeightMm = Math.round(runRegruesoCm * 10);
         const apronLengthMm = Math.max(100, segLengthMm + extraLeft + extraRight - trimLeft - trimRight);
-        pieces.push({
+        addPiece({
           id: `${pieceId}-FALDON`,
           name: `Faldón Delantero ${pieceId} (${apronLengthMm}x${apronHeightMm}mm)`,
           type: 'apron',
@@ -1425,6 +1445,22 @@ export function generateCountertopPieces(
           notes: `Tira de regrueso frontal ${runRegruesoCm}cm ingletada o a tope 90°.`,
           runId: run.id,
         });
+
+        // Tira de Regrueso Posterior (apoyo a muro para muebles base)
+        if (!isIsland) {
+          addPiece({
+            id: `${pieceId}-REGRUESO-POST`,
+            name: `Regrueso / Tira Posterior ${pieceId} (${apronLengthMm}x${apronHeightMm}mm)`,
+            type: 'apron',
+            lengthMm: apronLengthMm,
+            widthMm: apronHeightMm,
+            thicknessMm: product.thicknessMm,
+            areaM2: (apronLengthMm * apronHeightMm) / 1000000,
+            edgePolishingM: apronLengthMm / 1000,
+            notes: `Tira de regrueso posterior ${runRegruesoCm}cm de apoyo y nivelación a muro.`,
+            runId: run.id,
+          });
+        }
       }
 
       // 3. Respaldo / Zócalo Posterior (solo en muros pegados a pared, abarca TODO el largo de la cubierta y patas)
@@ -1445,7 +1481,7 @@ export function generateCountertopPieces(
             : 0;
         const totalBsLengthMm = segLengthMm + bsLeft + bsRight;
 
-        pieces.push({
+        addPiece({
           id: `${pieceId}-RESPALDO`,
           name: `${
             runBacksplashMode === 'full_height'
@@ -1481,7 +1517,7 @@ export function generateCountertopPieces(
       const shouldGenBsRight = !isWaterRight && (override?.backsplashRight !== undefined ? override.backsplashRight : hasBacksplashRight);
 
       if (shouldGenBsLeft) {
-        pieces.push({
+        addPiece({
           id: `${prefix}-RESPALDO-LAT-IZQ`,
           name: `Respaldo Lateral Izquierdo (${latBsLengthMm}x${bsHeightMm}mm)`,
           type: 'backsplash',
@@ -1496,7 +1532,7 @@ export function generateCountertopPieces(
       }
 
       if (shouldGenBsRight) {
-        pieces.push({
+        addPiece({
           id: `${prefix}-RESPALDO-LAT-DER`,
           name: `Respaldo Lateral Derecho (${latBsLengthMm}x${bsHeightMm}mm)`,
           type: 'backsplash',
@@ -1515,7 +1551,7 @@ export function generateCountertopPieces(
     if (runRegruesoCm > 0 && config.regruesoOnOverhangSides !== false) {
       const apronHeightMm = Math.round(runRegruesoCm * 10);
       if (!isWaterLeft && (run.overhangLeftMm || 0) > 0 && run.canWaterfallLeft && run.cornerExtensionLeftMm === 0 && (run.extensionToWallLeftMm || 0) === 0) {
-        pieces.push({
+        addPiece({
           id: `${prefix}-FALDON-LAT-IZQ`,
           name: `Faldón Lateral Izquierdo (${run.depthMm}x${apronHeightMm}mm)`,
           type: 'apron',
@@ -1529,7 +1565,7 @@ export function generateCountertopPieces(
         });
       }
       if (!isWaterRight && (run.overhangRightMm || 0) > 0 && run.canWaterfallRight && run.cornerExtensionRightMm === 0 && (run.extensionToWallRightMm || 0) === 0) {
-        pieces.push({
+        addPiece({
           id: `${prefix}-FALDON-LAT-DER`,
           name: `Faldón Lateral Derecho (${run.depthMm}x${apronHeightMm}mm)`,
           type: 'apron',
@@ -1548,7 +1584,7 @@ export function generateCountertopPieces(
         const extraLeft = (run.cornerExtensionLeftMm || 0) + (run.extensionToWallLeftMm || 0) + (run.overhangLeftMm || 0);
         const extraRight = (run.cornerExtensionRightMm || 0) + (run.extensionToWallRightMm || 0) + (run.overhangRightMm || 0);
         const totalRearApronLen = Math.max(100, run.totalLengthMm + extraLeft + extraRight);
-        pieces.push({
+        addPiece({
           id: `${prefix}-FALDON-TRASERO`,
           name: `Faldón Trasero Barra Isla (${totalRearApronLen}x${apronHeightMm}mm)`,
           type: 'apron',
@@ -1565,7 +1601,7 @@ export function generateCountertopPieces(
 
     // 5. Patas Cascada (Waterfall) laterales - Solo si el extremo está libre (sin despensa ni esquina)
     if (isWaterLeft && run.canWaterfallLeft) {
-      pieces.push({
+      addPiece({
         id: `${prefix}-CASCADA-IZQ`,
         name: `Pata Cascada Lateral Izquierda (${run.heightMm}x${run.depthMm}mm)`,
         type: 'waterfall',
@@ -1580,7 +1616,7 @@ export function generateCountertopPieces(
     }
 
     if (isWaterRight && run.canWaterfallRight) {
-      pieces.push({
+      addPiece({
         id: `${prefix}-CASCADA-DER`,
         name: `Pata Cascada Lateral Derecha (${run.heightMm}x${run.depthMm}mm)`,
         type: 'waterfall',
@@ -1598,7 +1634,7 @@ export function generateCountertopPieces(
     if (isIsland && islandBackConfig?.enabled && islandBackConfig.materialType === 'countertop') {
       const panelLengthMm = run.totalLengthMm;
       const panelHeightMm = run.heightMm; // estrictamente a piso
-      pieces.push({
+      addPiece({
         id: `${prefix}-TRASERA-ISLA`,
         name: `Panel Trasero Trasdosado Isla (${panelLengthMm}x${panelHeightMm}mm)`,
         type: 'slab',
@@ -1613,6 +1649,7 @@ export function generateCountertopPieces(
     }
   }
 
+  const pieces = rawPieces;
   if (pieces.length === 0) return null;
 
   // Encastres

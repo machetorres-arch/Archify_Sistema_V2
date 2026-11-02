@@ -1148,13 +1148,21 @@ export function Cabinet({ id, type, variant, width, height, depth, position, rot
    const innerW = width - (thickness * 2);
    const gap = 0.3; // 3mm de cantería
    const effectiveVariant = variant || (width > 60 ? '2_doors' : '1_door');
-   const isKutzAsaGlobal = handleConfig?.model === 'kutz_asa' || effectiveVariant === 'hospital_meson_3drawers' || effectiveVariant === 'hospital_meson_1door' || effectiveVariant === 'hospital_meson_2doors';
+   const isKutzAsaModel = handleConfig?.model === 'kutz_asa';
+   const isKutzAsaGlobal = isKutzAsaModel;
    const kutzGapY = isKutzAsaGlobal ? 3.5 : gap; // 35mm de luz entre frentes para asa corrida según plano CAD
    const faldonDrop = (countertopConfig?.enabled && isBaseOrIsland) ? Math.max(0, rawRegruesoCm - stoneThicknessCm) : 0;
-   const kutzTopDeduct = (isBaseOrIsland && isKutzAsaGlobal)
-      ? (faldonDrop + 3.5)
+   const kutzTopDeduct = (isBaseOrIsland && isKutzAsaModel)
+      ? (faldonDrop + 3.2)
       : (isGolaActive ? 3.5 : (isBaseOrIsland ? regruesoDeduct : 0));
-   const frontZ = depth/2 + thickness/2;
+   const isHospitalModule = variant === 'hospital_meson_3drawers' || variant === 'hospital_meson_1door' || variant === 'hospital_meson_2doors' || variant === 'hospital_niche_open';
+   const isHospitalBaseActive = (useKitchenStore.getState().projectMode === 'hospital' || useKitchenStore.getState().hospitalBaseType === 'metal_frame' || isHospitalModule) && isBaseOrIsland;
+   const carcassDepthDeduct = (isHospitalBaseActive || isHospitalModule)
+      ? 3.0
+      : ((countertopConfig?.enabled && isBaseOrIsland && rawRegruesoCm > 0) ? 3.0 : 0);
+   const carcassDepth = Math.max(20, depth - carcassDepthDeduct);
+   const carcassCenterZ = -carcassDepthDeduct / 2;
+   const frontZ = carcassCenterZ + carcassDepth / 2 + thickness / 2;
 
    const renderParametricBody = () => {
       // 1. Renderizado de Elementos de Decoración & Electrodomésticos Especializados
@@ -1179,8 +1187,8 @@ export function Cabinet({ id, type, variant, width, height, depth, position, rot
       const renderCoverPanels = () => {
          const isWineRack = variant?.includes('wine_rack') || variant === 'base_wine_rack' || variant === 'wall_wine_rack' || variant === 'tall_wine_rack' || variant === 'island_wine_rack';
          const hasFronts = !isWineRack && variant !== 'open' && variant !== 'tall_open' && variant !== 'wall_open';
-         const coverDepth = (hasFronts || isWineRack) ? depth + thickness : depth;
-         const coverZ = (hasFronts || isWineRack) ? thickness / 2 : 0;
+         const coverDepth = (hasFronts || isWineRack) ? carcassDepth + thickness : carcassDepth;
+         const coverZ = (hasFronts || isWineRack) ? (carcassCenterZ + thickness / 2) : carcassCenterZ;
 
          return (
             <>
@@ -1193,7 +1201,7 @@ export function Cabinet({ id, type, variant, width, height, depth, position, rot
                   const coverMat = leftCoverPanel.material || doorMaterial;
                   const effectiveCoverDepth = leftCoverPanel.depth || coverDepth;
                   const effectiveCoverZ = leftCoverPanel.depth 
-                     ? ((depth / 2 + ((hasFronts || isWineRack) ? thickness : 0)) - effectiveCoverDepth / 2) 
+                     ? ((carcassCenterZ + carcassDepth / 2 + ((hasFronts || isWineRack) ? thickness : 0)) - effectiveCoverDepth / 2) 
                      : coverZ;
                   const xPos = -width / 2 - coverThick / 2;
                   return (
@@ -1214,7 +1222,7 @@ export function Cabinet({ id, type, variant, width, height, depth, position, rot
                   const coverMat = rightCoverPanel.material || doorMaterial;
                   const effectiveCoverDepth = rightCoverPanel.depth || coverDepth;
                   const effectiveCoverZ = rightCoverPanel.depth 
-                     ? ((depth / 2 + ((hasFronts || isWineRack) ? thickness : 0)) - effectiveCoverDepth / 2) 
+                     ? ((carcassCenterZ + carcassDepth / 2 + ((hasFronts || isWineRack) ? thickness : 0)) - effectiveCoverDepth / 2) 
                      : coverZ;
                   const xPos = width / 2 + coverThick / 2;
                   return (
@@ -1234,12 +1242,12 @@ export function Cabinet({ id, type, variant, width, height, depth, position, rot
          if (variant === 'open') return null;
          
           const renderUndermountDrawer = (keyPrefix: string, yPos: number, drawerH: number, colorProps: any, drawerKey = 'drawer-0', customSideHeightCm?: number) => {
-            const innerDepthMm = (depth - 1.5) * 10;
+            const innerDepthMm = (carcassDepth - 1.5) * 10;
             const nominalLength = getNominalSlideLength(innerDepthMm) / 10; // cm
             const drawerBoxLength = nominalLength - 1.0; // SKL = NL - 10mm
             
-            const drawerBoxZCenter = depth/2 - drawerBoxLength/2;
-            const slideZCenter = depth/2 - nominalLength/2;
+            const drawerBoxZCenter = (carcassCenterZ + carcassDepth / 2) - drawerBoxLength / 2;
+            const slideZCenter = (carcassCenterZ + carcassDepth / 2) - nominalLength / 2;
             
             // SKW = LW - 49mm (PDF spec)
             const skw = innerW - 4.9; 
@@ -1324,11 +1332,11 @@ export function Cabinet({ id, type, variant, width, height, depth, position, rot
          };
 
          const renderSinkUDrawer = (yPos: number, drawerH: number, colorProps: any, drawerKey = 'drawer-0') => {
-            const innerDepthMm = (depth - 1.5) * 10;
+            const innerDepthMm = (carcassDepth - 1.5) * 10;
             const nominalLength = getNominalSlideLength(innerDepthMm) / 10; // cm
             const drawerBoxLength = nominalLength - 1.0;
-            const drawerBoxZCenter = depth / 2 - drawerBoxLength / 2;
-            const slideZCenter = depth / 2 - nominalLength / 2;
+            const drawerBoxZCenter = (carcassCenterZ + carcassDepth / 2) - drawerBoxLength / 2;
+            const slideZCenter = (carcassCenterZ + carcassDepth / 2) - nominalLength / 2;
             const skw = innerW - 4.9;
             const sideHeight = Math.max(10, drawerH - 4);
             const yBoxCenter = yPos;
@@ -1499,9 +1507,9 @@ export function Cabinet({ id, type, variant, width, height, depth, position, rot
          
          const renderShelfWithJoints = (yPos: number, keySuffix: string | number) => (
             <group key={`shelf-${keySuffix}`}>
-               <Board position={[0, yPos, 0]} args={[innerW, shelfThickness, depth - 2]} {...parseColor(shelfColor || cStructure, shelfMaterial, 'shelf')} />
-               <AssemblyJoint position={[-innerW/2, yPos, 0]} length={depth - 2} axis="z" pointing="right" thickness={shelfThickness} count={2} />
-               <AssemblyJoint position={[innerW/2, yPos, 0]} length={depth - 2} axis="z" pointing="left" thickness={shelfThickness} count={2} />
+               <Board position={[0, yPos, carcassCenterZ]} args={[innerW, shelfThickness, carcassDepth - 2]} {...parseColor(shelfColor || cStructure, shelfMaterial, 'shelf')} />
+               <AssemblyJoint position={[-innerW/2, yPos, carcassCenterZ]} length={carcassDepth - 2} axis="z" pointing="right" thickness={shelfThickness} count={2} />
+               <AssemblyJoint position={[innerW/2, yPos, carcassCenterZ]} length={carcassDepth - 2} axis="z" pointing="left" thickness={shelfThickness} count={2} />
             </group>
          );
 
@@ -1510,7 +1518,7 @@ export function Cabinet({ id, type, variant, width, height, depth, position, rot
                {/* Perfil Gola Superior Tipo J Provelcar x175 Oficial */}
                <mesh 
                   geometry={getProvelcarX175Geometry(golaSpan)} 
-                  position={[-golaSpan / 2, legsHeight + cabH, depth / 2]} 
+                  position={[-golaSpan / 2, legsHeight + cabH, carcassCenterZ + carcassDepth / 2]} 
                   rotation={[0, Math.PI / 2, 0]}
                   castShadow
                >
@@ -1524,7 +1532,7 @@ export function Cabinet({ id, type, variant, width, height, depth, position, rot
                {/* Perfil Gola Intermedio Tipo C / U Provelcar x176 Oficial */}
                <mesh 
                   geometry={getProvelcarX176Geometry(golaSpan)} 
-                  position={[-golaSpan / 2, yPos, depth / 2]} 
+                  position={[-golaSpan / 2, yPos, carcassCenterZ + carcassDepth / 2]} 
                   rotation={[0, Math.PI / 2, 0]}
                   castShadow
                >
@@ -1534,23 +1542,22 @@ export function Cabinet({ id, type, variant, width, height, depth, position, rot
          );
          
            if (effectiveVariant === '1_door' || effectiveVariant === 'tall_1_door') {
-            const doorW = width - gap*2;
-            const topDeduct = kutzTopDeduct;
-            const gapY = isKutzAsaGlobal ? kutzGapY : gap;
-            const doorH = Math.max(10, cabH - topDeduct - (isKutzAsaGlobal ? gapY : gap*2));
-            const doorY = isGolaActive ? (legsHeight + (cabH - topDeduct)/2) : (legsHeight + gapY + doorH/2);
+            const doorW = width - gap * 2;
+            const topDeduct = isGolaActive ? 3.5 : (isKutzAsaModel ? (faldonDrop + 3.2) : (isBaseOrIsland ? regruesoDeduct : 0));
+            const doorH = Math.max(10, cabH - topDeduct - gap * 2);
+            const doorY = isGolaActive ? (legsHeight + (cabH - topDeduct) / 2) : (legsHeight + gap + doorH / 2);
             return (
                <>
                   {isGolaActive && renderGolaL()}
                   {(type === 'base' || type === 'island') && !isGolaActive && (
                      <>
                         <Board
-                           position={[0, legsHeight + cabH - 3.4, depth / 2 - thickness / 2]}
+                           position={[0, legsHeight + cabH - 3.4, carcassCenterZ + carcassDepth / 2 - thickness / 2]}
                            args={[innerW, 6.8, thickness]}
                            {...parseColor(cStructure, structureMaterial, 'structure')}
                         />
-                        <VerticalRailJoint xPos={-innerW / 2} yCenter={legsHeight + cabH - 3.4} zPos={depth / 2 - thickness / 2} thickness={thickness} isLeft={true} />
-                        <VerticalRailJoint xPos={innerW / 2} yCenter={legsHeight + cabH - 3.4} zPos={depth / 2 - thickness / 2} thickness={thickness} isLeft={false} />
+                        <VerticalRailJoint xPos={-innerW / 2} yCenter={legsHeight + cabH - 3.4} zPos={carcassCenterZ + carcassDepth / 2 - thickness / 2} thickness={thickness} isLeft={true} />
+                        <VerticalRailJoint xPos={innerW / 2} yCenter={legsHeight + cabH - 3.4} zPos={carcassCenterZ + carcassDepth / 2 - thickness / 2} thickness={thickness} isLeft={false} />
                      </>
                   )}
                   <AnimatedDoor
@@ -1989,13 +1996,12 @@ export function Cabinet({ id, type, variant, width, height, depth, position, rot
          }
          
            if (effectiveVariant === '2_doors' || effectiveVariant === 'tall_2_doors') {
-            const doorW = (width - gap*3) / 2;
-            const topDeduct = kutzTopDeduct;
-            const gapY = isKutzAsaGlobal ? kutzGapY : gap;
-            const doorH = Math.max(10, cabH - topDeduct - (isKutzAsaGlobal ? gapY : gap*2));
-            const doorY = isGolaActive ? (legsHeight + (cabH - topDeduct)/2) : (legsHeight + gapY + doorH/2);
-            const leftDoorX = -width/2 + gap + doorW/2;
-            const rightDoorX = width/2 - gap - doorW/2;
+            const doorW = (width - gap * 3) / 2;
+            const topDeduct = isGolaActive ? 3.5 : (isKutzAsaModel ? (faldonDrop + 3.2) : (isBaseOrIsland ? regruesoDeduct : 0));
+            const doorH = Math.max(10, cabH - topDeduct - gap * 2);
+            const doorY = isGolaActive ? (legsHeight + (cabH - topDeduct) / 2) : (legsHeight + gap + doorH / 2);
+            const leftDoorX = -width / 2 + gap + doorW / 2;
+            const rightDoorX = width / 2 - gap - doorW / 2;
             return (
                <>
                   {isGolaActive && renderGolaL()}
@@ -2192,27 +2198,37 @@ export function Cabinet({ id, type, variant, width, height, depth, position, rot
          }
 
          if (effectiveVariant === 'hospital_meson_3drawers') {
-            // Módulo Cajonero Hospitalario MC.2.02: 3 cajones (A, B y C) según plano CAD
-            // A (superior): h=14.8cm + Cerradura trampa ANVER + Tirador Kutz
-            // B (medio): h=14.8cm + Tirador Kutz
-            // C (inferior): h=19.0cm + Tirador Kutz
-            // Luz vertical entre frentes = 35mm (3.5cm) / Luz superior bajo cubierta = 32mm (3.2cm)
-            const topGap = 3.5 + faldonDrop; // 3.5cm luz superior + faldón de regrueso
-            const interGap = 3.5; // 35mm entre frentes para perfil asa corrida según plano CAD
-            const availableH = Math.max(30, cabH - topGap - interGap * 2);
-            // Proporción paramétrica exacta según plano CAD (A=148mm, B=148mm, C=190mm para casco estándar de 588mm -> 148+148+190=486mm)
+            // Módulo Cajonero Hospitalario MC.2.02: 3 cajones (A, B y C)
+            // Cuando se usa tirador Asa Corrida KUTZ:
+            //   - Luz vertical entre frentes = 35mm (3.5cm) x 2 vanos intermedios
+            //   - Luz superior bajo cubierta = 35mm (3.5cm) + faldón
+            //   - Frentes proporcionados a 148 / 148 / 190 mm con barras intermedias de 55mm vistas
+            // Cuando se usa cualquier otro tirador (Forza, Madrid, Balín, etc.):
+            //   - Cantería estándar de 3mm (gap) entre frentes y en la base
+            //   - Frentes cubren la totalidad del vano frontal alineados exactamente con las puertas vecinas
+            //   - No se muestran las barras intermedias de 55mm
+            const isAsaCorrida = isKutzAsaModel;
+            const topGap = isAsaCorrida ? (3.5 + faldonDrop) : ((isBaseOrIsland ? regruesoDeduct : 0) + gap);
+            const interGap = isAsaCorrida ? 3.5 : gap;
+            const availableH = isAsaCorrida
+               ? Math.max(30, cabH - topGap - interGap * 2)
+               : Math.max(20, cabH - topGap - interGap * 2 - gap);
+
+            // Proporción paramétrica según plano CAD (A=148mm, B=148mm, C=190mm -> 148+148+190=486mm)
             const hA = Math.max(10, Math.round(availableH * (148 / 486) * 10) / 10);
             const hB = Math.max(10, Math.round(availableH * (148 / 486) * 10) / 10);
             const hC = Number((availableH - hA - hB).toFixed(1));
-            const yC = legsHeight + hC / 2;
-            const yB = legsHeight + hC + interGap + hB / 2;
-            const yA = legsHeight + hC + interGap + hB + interGap + hA / 2;
+
+            const yBaseOffset = isAsaCorrida ? 0 : gap;
+            const yC = legsHeight + yBaseOffset + hC / 2;
+            const yB = legsHeight + yBaseOffset + hC + interGap + hB / 2;
+            const yA = legsHeight + yBaseOffset + hC + interGap + hB + interGap + hA / 2;
 
             // Cotas de barras frontales intermedias entre cajones según detalle CAD (VERTICALES, alto 55mm con tapacanto)
             const yBarCB = legsHeight + hC + interGap / 2;
             const yBarBA = legsHeight + hC + interGap + hB + interGap / 2;
             const frontBarHeight = 5.5; // 55 mm
-            const frontBarZPos = depth / 2 - thickness / 2;
+            const frontBarZPos = carcassCenterZ + carcassDepth / 2 - thickness / 2;
 
             // Barra frontal superior vertical (68mm con tapacanto incluido) que parte desde arriba bajo cubierta
             const topBarHeight = 6.8; // 68 mm
@@ -2229,22 +2245,26 @@ export function Cabinet({ id, type, variant, width, height, depth, position, rot
                   <VerticalRailJoint xPos={-innerW / 2} yCenter={yTopBar} zPos={frontBarZPos} thickness={thickness} isLeft={true} />
                   <VerticalRailJoint xPos={innerW / 2} yCenter={yTopBar} zPos={frontBarZPos} thickness={thickness} isLeft={false} />
 
-                  {/* Barras frontales intermedias verticales (55mm) entre cajones según detalle CAD */}
-                  <Board
-                     position={[0, yBarCB, frontBarZPos]}
-                     args={[innerW, frontBarHeight, thickness]}
-                     {...parseColor(cStructure, structureMaterial, 'structure')}
-                  />
-                  <VerticalRailJoint xPos={-innerW / 2} yCenter={yBarCB} zPos={frontBarZPos} thickness={thickness} isLeft={true} />
-                  <VerticalRailJoint xPos={innerW / 2} yCenter={yBarCB} zPos={frontBarZPos} thickness={thickness} isLeft={false} />
+                  {/* Barras frontales intermedias verticales (55mm) exclusivas de asa corrida KUTZ */}
+                  {isAsaCorrida && (
+                     <>
+                        <Board
+                           position={[0, yBarCB, frontBarZPos]}
+                           args={[innerW, frontBarHeight, thickness]}
+                           {...parseColor(cStructure, structureMaterial, 'structure')}
+                        />
+                        <VerticalRailJoint xPos={-innerW / 2} yCenter={yBarCB} zPos={frontBarZPos} thickness={thickness} isLeft={true} />
+                        <VerticalRailJoint xPos={innerW / 2} yCenter={yBarCB} zPos={frontBarZPos} thickness={thickness} isLeft={false} />
 
-                  <Board
-                     position={[0, yBarBA, frontBarZPos]}
-                     args={[innerW, frontBarHeight, thickness]}
-                     {...parseColor(cStructure, structureMaterial, 'structure')}
-                  />
-                  <VerticalRailJoint xPos={-innerW / 2} yCenter={yBarBA} zPos={frontBarZPos} thickness={thickness} isLeft={true} />
-                  <VerticalRailJoint xPos={innerW / 2} yCenter={yBarBA} zPos={frontBarZPos} thickness={thickness} isLeft={false} />
+                        <Board
+                           position={[0, yBarBA, frontBarZPos]}
+                           args={[innerW, frontBarHeight, thickness]}
+                           {...parseColor(cStructure, structureMaterial, 'structure')}
+                        />
+                        <VerticalRailJoint xPos={-innerW / 2} yCenter={yBarBA} zPos={frontBarZPos} thickness={thickness} isLeft={true} />
+                        <VerticalRailJoint xPos={innerW / 2} yCenter={yBarBA} zPos={frontBarZPos} thickness={thickness} isLeft={false} />
+                     </>
+                  )}
 
                   {/* Cajón C inferior: h_caja = 140mm (14cm) (Corredera Häfele cierre suave) */}
                   {renderUndermountDrawer('p0', yC, hC, parseColor(cDrawers, drawerFrontMaterial, 'drawer-c'), 'drawer-c', 14.0)}
@@ -2270,10 +2290,9 @@ export function Cabinet({ id, type, variant, width, height, depth, position, rot
 
          if (effectiveVariant === 'hospital_meson_1door') {
             const doorW = width - gap * 2;
-            const topDeduct = kutzTopDeduct;
-            const gapY = kutzGapY;
-            const doorH = Math.max(10, cabH - topDeduct - gapY);
-            const doorY = legsHeight + gapY + doorH / 2;
+            const topDeduct = isGolaActive ? 3.5 : (isKutzAsaModel ? (faldonDrop + 3.2) : (isBaseOrIsland ? regruesoDeduct : 0));
+            const doorH = Math.max(10, cabH - topDeduct - gap * 2);
+            const doorY = isGolaActive ? (legsHeight + (cabH - topDeduct) / 2) : (legsHeight + gap + doorH / 2);
             return (
                <>
                   <AnimatedDoor
@@ -2305,10 +2324,9 @@ export function Cabinet({ id, type, variant, width, height, depth, position, rot
 
          if (effectiveVariant === 'hospital_meson_2doors') {
             const doorW = (width - gap * 3) / 2;
-            const topDeduct = kutzTopDeduct;
-            const gapY = kutzGapY;
-            const doorH = Math.max(10, cabH - topDeduct - gapY);
-            const doorY = legsHeight + gapY + doorH / 2;
+            const topDeduct = isGolaActive ? 3.5 : (isKutzAsaModel ? (faldonDrop + 3.2) : (isBaseOrIsland ? regruesoDeduct : 0));
+            const doorH = Math.max(10, cabH - topDeduct - gap * 2);
+            const doorY = isGolaActive ? (legsHeight + (cabH - topDeduct) / 2) : (legsHeight + gap + doorH / 2);
             const leftDoorX = -width / 2 + gap + doorW / 2;
             const rightDoorX = width / 2 - gap - doorW / 2;
             return (
@@ -2444,10 +2462,9 @@ export function Cabinet({ id, type, variant, width, height, depth, position, rot
             const blindW = Math.max(35, width / 2);
             const stripW = 6.5; // Regleta de ajuste frontal traslapada de 65 mm (evita colisiones con tiradores a 90°)
             const doorW = width - blindW - gap * 2;
-            const topDeduct = isGolaActive ? 3.5 : (isBaseOrIsland ? regruesoDeduct : 0);
-            const gapY = isKutzAsaGlobal ? kutzGapY : gap;
-            const doorH = Math.max(10, cabH - topDeduct - (isKutzAsaGlobal ? gapY : gap * 2));
-            const doorY = isGolaActive ? (legsHeight + (cabH - topDeduct)/2) : (legsHeight + gapY + doorH / 2);
+            const topDeduct = isGolaActive ? 3.5 : (isKutzAsaModel ? (faldonDrop + 3.2) : (isBaseOrIsland ? regruesoDeduct : 0));
+            const doorH = Math.max(10, cabH - topDeduct - gap * 2);
+            const doorY = isGolaActive ? (legsHeight + (cabH - topDeduct) / 2) : (legsHeight + gap + doorH / 2);
             
             const blindX = isRight ? (width / 2 - blindW / 2) : (-width / 2 + blindW / 2);
             const postX = isRight ? (width / 2 - blindW + thickness / 2) : (-width / 2 + blindW - thickness / 2);
@@ -3101,8 +3118,8 @@ export function Cabinet({ id, type, variant, width, height, depth, position, rot
                      return (
                         <Board 
                            key={`lat-${key}`}
-                           position={[xPos, legsHeight + cabH/2, 0]} 
-                           args={[thickness, cabH, depth]} 
+                           position={[xPos, legsHeight + cabH/2, carcassCenterZ]} 
+                           args={[thickness, cabH, carcassDepth]} 
                            {...parseColor(cStructure, structureMaterial, key)} 
                         />
                      );
@@ -3111,9 +3128,9 @@ export function Cabinet({ id, type, variant, width, height, depth, position, rot
                   // Lateral con Gola activo: Destaje CNC para paso continuo del riel Gola L (y Gola C si aplica)
                   const notchDepth = 2.8;
                   const notchLHeight = 5.8;
-                  const backDepth = depth - notchDepth;
-                  const zBack = -depth/2 + backDepth/2;
-                  const zFront = depth/2 - notchDepth/2;
+                  const backDepth = carcassDepth - notchDepth;
+                  const zBack = (carcassCenterZ - carcassDepth / 2) + backDepth / 2;
+                  const zFront = (carcassCenterZ + carcassDepth / 2) - notchDepth / 2;
 
                   let effVariant = variant;
                   if (!effVariant) {
@@ -3191,8 +3208,8 @@ export function Cabinet({ id, type, variant, width, height, depth, position, rot
             })()}
             {(() => {
                const isWineRack = variant?.includes('wine_rack') || variant === 'base_wine_rack' || variant === 'wall_wine_rack' || variant === 'tall_wine_rack' || variant === 'island_wine_rack';
-               const botDepth = isWineRack ? depth + thickness : depth;
-               const botZ = isWineRack ? thickness / 2 : 0;
+               const botDepth = isWineRack ? depth + thickness : carcassDepth;
+               const botZ = isWineRack ? thickness / 2 : carcassCenterZ;
                const isBaseOrIslandCab = type === 'base' || type === 'island';
                const isHospital3Drawers = effectiveVariant === 'hospital_meson_3drawers';
                const standardBackH = isHospital3Drawers ? (cabH - thickness) : (isBaseOrIslandCab ? (cabH - thickness) : (cabH - thickness * 2));
@@ -3222,10 +3239,10 @@ export function Cabinet({ id, type, variant, width, height, depth, position, rot
             })()}
             {type === 'base' || type === 'island' ? (
                <>
-                  {effectiveVariant === 'hospital_meson_3drawers' ? (
+                  {(effectiveVariant === 'hospital_meson_3drawers' || isHospitalModule) ? (
                      (() => {
-                        const topDepth = depth - thickness * 2 - 0.2;
-                        const topZ = 0.1;
+                        const topDepth = carcassDepth - (effectiveVariant === 'hospital_meson_3drawers' ? (thickness * 2) : thickness) - 0.2;
+                        const topZ = carcassCenterZ + 0.1;
                         return (
                            <>
                               <Board 
@@ -3248,7 +3265,7 @@ export function Cabinet({ id, type, variant, width, height, depth, position, rot
                      <>
                         {(() => {
                            const isWineRack = variant?.includes('wine_rack') || variant === 'base_wine_rack' || variant === 'wall_wine_rack' || variant === 'tall_wine_rack' || variant === 'island_wine_rack';
-                           const frontRailZ = isWineRack ? depth/2 + thickness - 5 : (isGolaActive ? depth/2 - 2.8 - 5 : depth/2 - 5);
+                           const frontRailZ = isWineRack ? depth/2 + thickness - 5 : (isGolaActive ? carcassCenterZ + carcassDepth/2 - 2.8 - 5 : carcassCenterZ + carcassDepth/2 - 5);
                            return (
                               <>
                                  <Board 

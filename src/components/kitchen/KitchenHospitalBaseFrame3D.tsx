@@ -71,8 +71,11 @@ export function KitchenHospitalBaseFrame3D() {
   return (
     <group name="hospital-continuous-base-chassis">
       {runs.map((run) => {
+        const isBaseRun = run.type === 'base';
         const totalLengthCm = run.totalLengthMm / 10;
-        const depthCm = run.depthMm / 10;
+        const carcassDepthCm = isBaseRun ? Math.max(20, (run.cabinets[0]?.depth || 60) - 3.0) : run.depthMm / 10;
+        const depthCm = carcassDepthCm;
+        const frameShiftZ = isBaseRun ? -1.5 : 0;
         const centerPos: [number, number, number] = [
           run.centerWorld[0],
           0,
@@ -120,8 +123,9 @@ export function KitchenHospitalBaseFrame3D() {
             position={centerPos}
             rotation={[0, rotY, 0]}
           >
-            {/* 1. LARGUERO LONGITUDINAL FRONTAL CONTINUO (FE 30x50mm) */}
-            <mesh position={[0, legsHeight - 1.5, depthCm / 2 - 2.5]}>
+            <group position={[0, 0, frameShiftZ]}>
+              {/* 1. LARGUERO LONGITUDINAL FRONTAL CONTINUO (FE 30x50mm) */}
+              <mesh position={[0, legsHeight - 1.5, depthCm / 2 - 2.5]}>
               <boxGeometry args={[totalLengthCm, 3.0, 5.0]} />
               <meshStandardMaterial
                 {...frameMaterialProps}
@@ -209,6 +213,7 @@ export function KitchenHospitalBaseFrame3D() {
                 </group>
               </React.Fragment>
             ))}
+            </group>
           </group>
         );
       })}

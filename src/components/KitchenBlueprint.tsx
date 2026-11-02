@@ -2571,11 +2571,13 @@ export function KitchenBlueprint() {
                 (() => {
                   const hConf = cab.handleConfig || kState.handleConfig;
                   const isKutz = !isBaseGola && hConf?.model === 'kutz_asa';
-                  const topGap = isKutz ? (35 + (hasRegrueso ? faldonDropMm : 0)) : 0;
-                  const interGap = isKutz ? 35 : 0;
-                  const availH = isKutz ? Math.max(30, bodyH - topGap - interGap * 2) : bodyH;
-                  const hA = isKutz ? Math.max(10, Math.round(availH * (148 / 486))) : Math.round(bodyH * 0.28);
-                  const hB = isKutz ? Math.max(10, Math.round(availH * (148 / 486))) : Math.round(bodyH * 0.28);
+                  const topGap = isKutz ? (35 + (hasRegrueso ? faldonDropMm : 0)) : ((hasRegrueso ? faldonDropMm : 0) + 2);
+                  const interGap = isKutz ? 35 : 2;
+                  const availH = isKutz
+                    ? Math.max(30, bodyH - topGap - interGap * 2)
+                    : Math.max(20, bodyH - topGap - interGap * 2 - 2);
+                  const hA = Math.max(10, Math.round(availH * (148 / 486)));
+                  const hB = Math.max(10, Math.round(availH * (148 / 486)));
                   const hC = availH - hA - hB;
                   const handleH = 15;
                   const hasHandle = !isBaseGola && hConf && hConf.model !== 'none';
@@ -2584,11 +2586,11 @@ export function KitchenBlueprint() {
                   const cx1 = cabW / 2 - hLen / 2;
                   const barH = 10;
                   const yA = topGap;
-                  const yB = isKutz ? (topGap + hA + interGap) : hA;
-                  const yC = isKutz ? (yB + hB + interGap) : (hA + hB);
-                  const cyA = Math.round(yA + hA * 0.60);
-                  const cyB = Math.round(yB + hB * 0.60);
-                  const cyC = Math.round(yC + hC * 0.60);
+                  const yB = yA + hA + interGap;
+                  const yC = yB + hB + interGap;
+                  const cyA = Math.round(yA + hA / 2);
+                  const cyB = Math.round(yB + hB / 2);
+                  const cyC = Math.round(yC + hC / 2);
 
                   return (
                     <g>
@@ -2604,7 +2606,7 @@ export function KitchenBlueprint() {
                         </>
                       ) : (
                         <>
-                          <text x={cabW / 2 - 20} y={Math.round(hA * 0.28)} fontSize={Math.max(12, fSizeElev * 0.38)} fill="#0f172a" fontWeight="bold" textAnchor="middle" fontFamily="monospace">CAJÓN A (ANVER)</text>
+                          <text x={cabW / 2 - 20} y={yA + Math.round(hA * 0.35)} fontSize={Math.max(12, fSizeElev * 0.38)} fill="#0f172a" fontWeight="bold" textAnchor="middle" fontFamily="monospace">CAJÓN A (ANVER)</text>
                           {hasHandle && (
                             <g>
                               {/* Tirador Horizontal Centrado (Forza / Asa) */}
@@ -2617,9 +2619,9 @@ export function KitchenBlueprint() {
                         </>
                       )}
                       {/* Símbolo Cerradura Trampa ANVER */}
-                      <circle cx={cabW - 25} cy={Math.round(hA * (isKutz ? 0.60 : 0.50))} r={7} fill="#e2e8f0" stroke="#0f172a" strokeWidth={strokeElev * 0.8} />
-                      <line x1={cabW - 25} y1={Math.round(hA * (isKutz ? 0.60 : 0.50)) - 4} x2={cabW - 25} y2={Math.round(hA * (isKutz ? 0.60 : 0.50)) + 4} stroke="#0f172a" strokeWidth={strokeElev} />
-                      <text x={cabW - 25} y={Math.round(hA * (isKutz ? 0.60 : 0.50)) + 13} fontSize={Math.max(7.5, fSizeElev * 0.22)} fill="#475569" fontWeight="bold" textAnchor="middle">ANVER</text>
+                      <circle cx={cabW - 25} cy={Math.round(yA + (isKutz ? hA * 0.60 : 32))} r={7} fill="#e2e8f0" stroke="#0f172a" strokeWidth={strokeElev * 0.8} />
+                      <line x1={cabW - 25} y1={Math.round(yA + (isKutz ? hA * 0.60 : 32)) - 4} x2={cabW - 25} y2={Math.round(yA + (isKutz ? hA * 0.60 : 32)) + 4} stroke="#0f172a" strokeWidth={strokeElev} />
+                      <text x={cabW - 25} y={Math.round(yA + (isKutz ? hA * 0.60 : 32)) + 13} fontSize={Math.max(7.5, fSizeElev * 0.22)} fill="#475569" fontWeight="bold" textAnchor="middle">ANVER</text>
                       
                       {/* Cajón B Intermedio */}
                       <rect x={0} y={yB} width={cabW} height={hB} fill="#ffffff" stroke="#0f172a" strokeWidth={strokeElev * 0.9} />
@@ -2632,7 +2634,7 @@ export function KitchenBlueprint() {
                         </>
                       ) : (
                         <>
-                          <text x={cabW / 2} y={Math.round(hA + hB * 0.28)} fontSize={Math.max(12, fSizeElev * 0.38)} fill="#475569" fontWeight="bold" textAnchor="middle" fontFamily="monospace">CAJÓN B (DUCASSE)</text>
+                          <text x={cabW / 2} y={yB + Math.round(hB * 0.35)} fontSize={Math.max(12, fSizeElev * 0.38)} fill="#475569" fontWeight="bold" textAnchor="middle" fontFamily="monospace">CAJÓN B (DUCASSE)</text>
                           {hasHandle && (
                             <g>
                               <rect x={cx1} y={cyB - barH / 2} width={hLen} height={barH} fill="#1e293b" stroke="#0f172a" strokeWidth={strokeElev * 0.7} rx={1.5} />
@@ -2655,7 +2657,7 @@ export function KitchenBlueprint() {
                         </>
                       ) : (
                         <>
-                          <text x={cabW / 2} y={Math.round(hA + hB + hC * 0.28)} fontSize={Math.max(12, fSizeElev * 0.38)} fill="#475569" fontWeight="bold" textAnchor="middle" fontFamily="monospace">CAJÓN C (HÄFELE SOFT)</text>
+                          <text x={cabW / 2} y={yC + Math.round(hC * 0.35)} fontSize={Math.max(12, fSizeElev * 0.38)} fill="#475569" fontWeight="bold" textAnchor="middle" fontFamily="monospace">CAJÓN C (HÄFELE SOFT)</text>
                           {hasHandle && (
                             <g>
                               <rect x={cx1} y={cyC - barH / 2} width={hLen} height={barH} fill="#1e293b" stroke="#0f172a" strokeWidth={strokeElev * 0.7} rx={1.5} />
@@ -3112,8 +3114,8 @@ export function KitchenBlueprint() {
               const stoneProduct = ctConfig.selectedProductId ? kState.qstoneCatalog.find(p => p.id === ctConfig.selectedProductId) : null;
               const stoneThickMm = stoneProduct?.thicknessMm || 20;
               const regruesoMm = regruesoValCm * 10;
-              // Según requerimiento de plano CAD: sobresale exactamente 26mm en cocina residencial con regrueso, o el vuelo exacto hasta cabD en módulo hospitalario
-              const overhangMm = isHospitalModule ? Math.max(0, cabD - carcassDepthMm) : (hasRegrueso ? 26 : (ctConfig.baseOverhangFrontCm ? Math.round(ctConfig.baseOverhangFrontCm * 10) : 20));
+              // En módulo hospitalario el frente remata a plomo con cabD; en residencial respeta baseOverhangFrontCm configurado (0 por defecto)
+              const overhangMm = isHospitalModule ? Math.max(0, cabD - carcassDepthMm) : (ctConfig.baseOverhangFrontCm ? Math.round(ctConfig.baseOverhangFrontCm * 10) : 0);
               const ctFrontX = fX + overhangMm;
 
               return (
@@ -4209,12 +4211,16 @@ export function KitchenBlueprint() {
                     <div>• <strong className="text-black">MATERIAL:</strong> Krion Solid Surface Snow White / HPL Compacto 12mm</div>
                     <div>• <strong className="text-black">TERMINACIÓN:</strong> Canto macizo 12mm pulido sanitario sin filo</div>
                     <div>• <strong className="text-black">ASEPSIA:</strong> Superficie no porosa, sin uniones perceptibles</div>
+                    <div>• <strong className="text-black">SOBREMEDIDA TALLER:</strong> Se aumentaron +2 mm por cara en cada corte de Krion</div>
                   </>
                 ) : (
                   <>
                     <div>• <strong className="text-black">ESPESOR CUBIERTA:</strong> {kState.countertopConfig?.thicknessMm || 20} mm | Cuarzo QStone</div>
                     <div>• <strong className="text-black">TERMINACIÓN:</strong> {kState.countertopConfig?.apronType === 'mitred' ? 'Faldón ingleteado 45°' : 'Canto pulido recto biselado'}</div>
                     <div>• <strong className="text-black">TRASFOROS:</strong> Plantilla física p/ encimera y lavaplatos</div>
+                    {kState.countertopConfig?.selectedProductId?.includes('krion') && (
+                      <div>• <strong className="text-black">SOBREMEDIDA TALLER:</strong> Se aumentaron +2 mm por cara en cada corte de Krion</div>
+                    )}
                   </>
                 )}
               </div>

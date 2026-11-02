@@ -626,7 +626,7 @@ export function exportKitchenPDF(cabinets: CabinetType[], state: any, filename =
     // Cuadro resumen de producto
     doc.setDrawColor(203, 213, 225);
     doc.setFillColor(248, 250, 252);
-    doc.roundedRect(14, ctY, 182, 38, 2, 2, 'FD');
+    doc.roundedRect(14, ctY, 182, ctBOM.product.materialType === 'solid_surface' ? 42 : 38, 2, 2, 'FD');
 
     doc.setTextColor(15, 23, 42);
     doc.setFontSize(9.5);
@@ -638,17 +638,21 @@ export function exportKitchenPDF(cabinets: CabinetType[], state: any, filename =
     doc.setTextColor(51, 65, 85);
 
     const isSint = ctBOM.product.materialType === 'sinterizado';
+    const isKrion = ctBOM.product.materialType === 'solid_surface';
     const regrueso = kStore.countertopConfig.regruesoCm;
     const bType = kStore.countertopConfig.buildingType === 'edificio' ? 'Edificio (máx 200 cm)' : 'Casa (máx 250 cm)';
 
     doc.text(`• Material: ${ctBOM.product.name} | Espesor: ${ctBOM.product.thicknessMm} mm | Formato Plancha: ${(ctBOM.product.sheetWidthMm/10)} x ${(ctBOM.product.sheetHeightMm/10)} cm`, 18, ctY + 12);
-    doc.text(`• Criterio Estructural: ${isSint ? 'SINTERIZADO 12mm -> Requiere Tapa Continua de Melamina Completa en módulos base' : 'CUARZO -> Sistema tradicional con barras de amarre superior 10cm'}`, 18, ctY + 17);
+    doc.text(`• Criterio Estructural: ${isSint ? 'SINTERIZADO 12mm -> Requiere Tapa Continua de Melamina Completa en módulos base' : 'CUARZO / KRION -> Sistema de apoyo sobre gabinetes base'}`, 18, ctY + 17);
     doc.text(`• Faldón / Regrueso Delantero: ${regrueso > 0 ? `${regrueso} cm (con deducción automática en altura de primer frente de cajón)` : 'Sin regrueso (0 cm)'}`, 18, ctY + 22);
     doc.text(`• Respaldo Muro: ${kStore.countertopConfig.backsplashMode === 'standard_5cm' ? 'Zócalo estándar 50 mm' : kStore.countertopConfig.backsplashMode === 'full_height' ? 'Revestimiento completo hasta muebles aéreos' : 'Sin respaldo'} | Uniones: Ortogonales a 90°`, 18, ctY + 27);
     doc.text(`• Logística: ${bType} | Corte con disco diamantado (Kerf 3.5 mm) | Remates: ${kStore.countertopConfig.waterfallLeft ? 'Cascada Izq [x] ' : ''}${kStore.countertopConfig.waterfallRight ? 'Cascada Der [x]' : ''}`, 18, ctY + 32);
+    if (isKrion) {
+      doc.text(`• Tolerancia de Fábrica: Se aumentaron +2 mm por cara en cada corte de Krion (sobremedida de taller para rectificado)`, 18, ctY + 37);
+    }
 
     // Tabla de Despiece de Marmolería
-    ctY = ctY + 44;
+    ctY = ctY + (isKrion ? 48 : 44);
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(9.5);
     doc.setTextColor(15, 23, 42);

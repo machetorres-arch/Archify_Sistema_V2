@@ -656,20 +656,24 @@ export function generateKitchenPartsList(cabinets: CabinetType[]): Part[] {
                     edgeL1: true, edgeL2: true, edgeW1: false, edgeW2: false,
                     notes: 'Barra frontal superior vertical bajo tapa (Alto 68mm con tapacanto incluido)'
                 });
-                // 2 barras frontales intermedias verticales entre cajones (alto 55mm con tapacanto incluido según detalle CAD)
-                parts.push({
-                    name: `Barras Frontales Intermedias Verticales ${cabName}`,
-                    moduleId: cab.id,
-                    moduleIndex: index,
-                    qty: 2,
-                    length: innerW * 10,
-                    width: 55, // 55 mm alto con tapacanto incluido
-                    thickness: structThicknessMm,
-                    material: cab.structureColor || state.structureColor,
-                    isHpl: isStructHpl,
-                    edgeL1: true, edgeL2: true, edgeW1: false, edgeW2: false,
-                    notes: 'Barras frontales verticales de amarre y separación entre cajones (Alto 55mm con tapacanto incluido)'
-                });
+                const hConfigCab = cab.handleConfig || kState.handleConfig;
+                const isCabAsaCorrida = hConfigCab?.model === 'kutz_asa';
+                if (isHospital3Drawers && isCabAsaCorrida) {
+                    // 2 barras frontales intermedias verticales entre cajones (alto 55mm con tapacanto incluido según detalle CAD)
+                    parts.push({
+                        name: `Barras Frontales Intermedias Verticales ${cabName}`,
+                        moduleId: cab.id,
+                        moduleIndex: index,
+                        qty: 2,
+                        length: innerW * 10,
+                        width: 55, // 55 mm alto con tapacanto incluido
+                        thickness: structThicknessMm,
+                        material: cab.structureColor || state.structureColor,
+                        isHpl: isStructHpl,
+                        edgeL1: true, edgeL2: true, edgeW1: false, edgeW2: false,
+                        notes: 'Barras frontales verticales de amarre y separación entre cajones (Alto 55mm con tapacanto incluido)'
+                    });
+                }
             }
         } else {
             // Barras superior delantera y trasera tradicionales (para cuarzo o sin cubierta)
@@ -1908,7 +1912,7 @@ export function generateKitchenPartsList(cabinets: CabinetType[]): Part[] {
         const isGola = (kState.golaSystem === 'aluminum' || kState.golaSystem === 'black') && (cab.type === 'base' || cab.type === 'island');
         const hConfig = cab.handleConfig || kState.handleConfig;
         const isKutz = hConfig?.model === 'kutz_asa';
-        const isAsaCorrida = !isGola && (isKutz || cab.variant === 'hospital_meson_3drawers');
+        const isAsaCorrida = !isGola && isKutz;
         // Separación técnica normada de 35mm (3.5cm) entre frentes para perfil asa corrida KUTZ 12/18 según plano CAD
         const gapY = isAsaCorrida ? 3.5 : gap;
         const regruesoCm = (ctConfig?.enabled && (cab.type === 'base' || cab.type === 'island')) ? (ctConfig.regruesoCm || 0) : 0;
@@ -1924,17 +1928,24 @@ export function generateKitchenPartsList(cabinets: CabinetType[]): Part[] {
         
         if (cab.variant === 'hospital_meson_3drawers') {
             // Ficha MC.2.02 SACYR / Plano CAD: 3 cajones (A, B y C)
-            // Luz vertical entre frentes = 35mm (3.5cm) x 2 vanos intermedios | Luz superior bajo faldón = 32mm (3.2cm)
             drawCount = 3;
-            const topGapCm = 3.5; // 32mm
-            const interGapCm = 3.5; // 35mm entre frentes
-            const availH = Math.max(30, cabH - topGapCm - interGapCm * 2);
-            // Proporción exacta según plano CAD (A=148mm, B=148mm, C=190mm para casco estándar de 588mm -> 148+148+190=486mm)
-            const hA = Math.max(10, Math.round(availH * (148 / 486) * 10) / 10);
-            const hB = Math.max(10, Math.round(availH * (148 / 486) * 10) / 10);
-            const hC = Number((availH - hA - hB).toFixed(1));
-            // Cajones de abajo hacia arriba: C, B, A
-            drawerHeights = [hC, hB, hA];
+            if (isAsaCorrida) {
+                // Luz vertical entre frentes = 35mm (3.5cm) x 2 vanos intermedios | Luz superior bajo faldón = 35mm
+                const topGapCm = 3.5 + faldonDrop;
+                const interGapCm = 3.5;
+                const availH = Math.max(30, cabH - topGapCm - interGapCm * 2);
+                const hA = Math.max(10, Math.round(availH * (148 / 486) * 10) / 10);
+                const hB = Math.max(10, Math.round(availH * (148 / 486) * 10) / 10);
+                const hC = Number((availH - hA - hB).toFixed(1));
+                drawerHeights = [hC, hB, hA];
+            } else {
+                // Tiradores convencionales (Forza, Madrid, Balín, etc.): cantería normal de 3mm
+                const availH = Math.max(20, cabH - topDeduction - gap * 4);
+                const hA = Math.max(10, Math.round(availH * (148 / 486) * 10) / 10);
+                const hB = Math.max(10, Math.round(availH * (148 / 486) * 10) / 10);
+                const hC = Number((availH - hA - hB).toFixed(1));
+                drawerHeights = [hC, hB, hA];
+            }
         } else if (cab.variant === '4_drawers') {
             drawCount = 4;
             if (isGola) {
@@ -2134,7 +2145,7 @@ export function generateKitchenPartsList(cabinets: CabinetType[]): Part[] {
     } else if (cab.variant === 'hospital_meson_1door') {
         const isGola = (kState.golaSystem === 'aluminum' || kState.golaSystem === 'black') && (cab.type === 'base' || cab.type === 'island');
         const hConfig = cab.handleConfig || kState.handleConfig;
-        const isAsaCorrida = !isGola && (hConfig?.model === 'kutz_asa' || !hConfig || hConfig.model === 'kutz_asa');
+        const isAsaCorrida = !isGola && (hConfig?.model === 'kutz_asa');
         const frontEdgeThickness = state.edgeBandingThicknessFronts || 2.0;
         const kutzHandleDeductCm = isAsaCorrida ? 3.2 : 0;
         const doorTopDeduct = (hasRegrueso ? faldonDropCm : 0) + kutzHandleDeductCm;
@@ -2159,7 +2170,7 @@ export function generateKitchenPartsList(cabinets: CabinetType[]): Part[] {
     } else if (cab.variant === 'hospital_meson_2doors') {
         const isGola = (kState.golaSystem === 'aluminum' || kState.golaSystem === 'black') && (cab.type === 'base' || cab.type === 'island');
         const hConfig = cab.handleConfig || kState.handleConfig;
-        const isAsaCorrida = !isGola && (hConfig?.model === 'kutz_asa' || !hConfig || hConfig.model === 'kutz_asa');
+        const isAsaCorrida = !isGola && (hConfig?.model === 'kutz_asa');
         const kutzHandleDeductCm = isAsaCorrida ? 3.2 : 0;
         const doorTopDeduct = (hasRegrueso ? faldonDropCm : 0) + kutzHandleDeductCm;
         const rawDoorH = isGola ? (cabH - 3.5 - gap * 2) : (cabH - doorTopDeduct - gap * 2);
